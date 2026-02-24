@@ -2744,7 +2744,8 @@ function renderResults() {
 
     const tr = document.createElement('tr');
     tr.style.cursor = 'pointer';
-    tr.addEventListener('click', (e) => { if (!e.target.closest('a')) toggleDetail(${i}, tr); });
+    const _idx = i;
+    tr.addEventListener('click', (e) => { if (!e.target.closest('a')) toggleDetail(_idx, tr); });
     tr.innerHTML = `
       <td class="score-cell" style="color:${scoreColor}">${scoreDisplay}<div style="font-size:0.65rem;font-weight:400;color:var(--text-dim)">${scoreIndicator} ${fitLabel}</div></td>
       <td class="company-cell">${escapeHtml(r.company)}</td>
