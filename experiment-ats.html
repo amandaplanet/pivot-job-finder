@@ -83,6 +83,7 @@
   .badge { display: inline-block; padding: 0.1rem 0.45rem; border-radius: 4px; font-size: 0.7rem; font-weight: 700; }
   .badge-gh     { background: #d1fae5; color: #065f46; }
   .badge-lever  { background: #dbeafe; color: #1e40af; }
+  .badge-ashby  { background: #ede9fe; color: #5b21b6; }
   .badge-miss   { background: #fee2e2; color: #991b1b; }
 
   a { color: var(--accent); text-decoration: none; }
@@ -110,9 +111,10 @@
     <div class="field">
       <label>Test against</label>
       <select id="atsChoice">
-        <option value="both">Greenhouse + Lever</option>
+        <option value="both">Greenhouse + Lever + Ashby</option>
         <option value="greenhouse">Greenhouse only</option>
         <option value="lever">Lever only</option>
+        <option value="ashby">Ashby only</option>
       </select>
     </div>
     <div class="field">
@@ -143,6 +145,7 @@
     <div class="stat-box"><div class="stat-value" id="statTested">0</div><div class="stat-label">Tested</div></div>
     <div class="stat-box"><div class="stat-value" id="statGH">0</div><div class="stat-label">Greenhouse</div></div>
     <div class="stat-box"><div class="stat-value" id="statLever">0</div><div class="stat-label">Lever</div></div>
+    <div class="stat-box"><div class="stat-value" id="statAshby">0</div><div class="stat-label">Ashby</div></div>
     <div class="stat-box"><div class="stat-value" id="statMiss">0</div><div class="stat-label">No match</div></div>
   </div>
   <div class="log" id="logEl"></div>
@@ -167,7 +170,7 @@
 // ── State ──────────────────────────────────────────────────────
 let shouldStop = false;
 let results = [];
-let cntTested = 0, cntGH = 0, cntLever = 0, cntMiss = 0;
+let cntTested = 0, cntGH = 0, cntLever = 0, cntAshby = 0, cntMiss = 0;
 
 // ── Slug guessing ──────────────────────────────────────────────
 const SUFFIXES = new Set([
@@ -221,25 +224,58 @@ async function tryLever(slug) {
   return { count: data.length, url: `https://jobs.lever.co/${slug}` };
 }
 
+async function tryAshby(slug) {
+  const resp = await fetch('https://jobs.ashbyhq.com/api/non-user-graphql', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      operationName: 'ApiJobBoardJobPostings',
+      variables: { organizationHostedJobsPageName: slug },
+      query: `query ApiJobBoardJobPostings($organizationHostedJobsPageName: String!) {
+        jobBoard: jobBoardWithTeams(organizationHostedJobsPageName: $organizationHostedJobsPageName) {
+          jobPostings { id title }
+        }
+      }`
+    }),
+    signal: AbortSignal.timeout(8000)
+  });
+  if (!resp.ok) return null;
+  const data = await resp.json();
+  const postings = data?.data?.jobBoard?.jobPostings;
+  if (!postings) return null;
+  return { count: postings.length, url: `https://jobs.ashbyhq.com/${slug}` };
+}
+
 // ── Test one company ───────────────────────────────────────────
 async function testCompany(company, atsChoice) {
-  const slugs  = guessSlug(company);
-  const tried  = [];
+  const slugs = guessSlug(company);
+  const tried = [];
+
+  const tryGH    = atsChoice === 'both' || atsChoice === 'greenhouse';
+  const tryLev   = atsChoice === 'both' || atsChoice === 'lever';
+  const tryAsh   = atsChoice === 'both' || atsChoice === 'ashby';
 
   for (const slug of slugs) {
     tried.push(slug);
 
-    if (atsChoice !== 'lever') {
+    if (tryGH) {
       try {
         const hit = await tryGreenhouse(slug);
         if (hit) return { company, ats: 'greenhouse', slug, jobCount: hit.count, url: hit.url, slugsTried: tried };
       } catch (_) {}
     }
 
-    if (atsChoice !== 'greenhouse') {
+    if (tryLev) {
       try {
         const hit = await tryLever(slug);
         if (hit) return { company, ats: 'lever', slug, jobCount: hit.count, url: hit.url, slugsTried: tried };
+      } catch (_) {}
+    }
+
+    if (tryAsh) {
+      try {
+        const hit = await tryAshby(slug);
+        if (hit) return { company, ats: 'ashby', slug, jobCount: hit.count, url: hit.url, slugsTried: tried };
       } catch (_) {}
     }
   }
@@ -261,6 +297,7 @@ function updateStats() {
   document.getElementById('statTested').textContent = cntTested;
   document.getElementById('statGH').textContent     = cntGH;
   document.getElementById('statLever').textContent  = cntLever;
+  document.getElementById('statAshby').textContent  = cntAshby;
   document.getElementById('statMiss').textContent   = cntMiss;
 }
 
@@ -270,6 +307,7 @@ function addRow(r) {
   const badge =
     r.ats === 'greenhouse' ? '<span class="badge badge-gh">Greenhouse</span>' :
     r.ats === 'lever'      ? '<span class="badge badge-lever">Lever</span>' :
+    r.ats === 'ashby'      ? '<span class="badge badge-ashby">Ashby</span>' :
                              '<span class="badge badge-miss">No match</span>';
   tr.innerHTML = `
     <td>${escHtml(r.company)}</td>
@@ -293,7 +331,7 @@ async function runExperiment() {
 
   // Reset
   results = [];
-  cntTested = cntGH = cntLever = cntMiss = 0;
+  cntTested = cntGH = cntLever = cntAshby = cntMiss = 0;
   document.getElementById('resultsBody').innerHTML = '';
   document.getElementById('logEl').innerHTML       = '';
   document.getElementById('progressBar').style.width = '0%';
@@ -323,8 +361,9 @@ async function runExperiment() {
         addRow(r);
         cntTested++;
         if      (r.ats === 'greenhouse') { cntGH++;    log(`✓ ${company} → Greenhouse / ${r.slug} (${r.jobCount} jobs)`, 'log-ok'); }
-        else if (r.ats === 'lever')      { cntLever++;  log(`✓ ${company} → Lever / ${r.slug} (${r.jobCount} jobs)`, 'log-ok'); }
-        else                             { cntMiss++;   log(`✗ ${company} → no match (tried: ${r.slugsTried.join(', ')})`, 'log-warn'); }
+        else if (r.ats === 'lever')      { cntLever++; log(`✓ ${company} → Lever / ${r.slug} (${r.jobCount} jobs)`, 'log-ok'); }
+        else if (r.ats === 'ashby')      { cntAshby++; log(`✓ ${company} → Ashby / ${r.slug} (${r.jobCount} jobs)`, 'log-ok'); }
+        else                             { cntMiss++;  log(`✗ ${company} → no match (tried: ${r.slugsTried.join(', ')})`, 'log-warn'); }
         updateStats();
       } catch (e) {
         cntTested++;
@@ -342,7 +381,7 @@ async function runExperiment() {
 
   const stopped = shouldStop ? ' (stopped early)' : '';
   document.getElementById('statusText').textContent =
-    `Done${stopped}. ${cntGH} Greenhouse, ${cntLever} Lever, ${cntMiss} no match.`;
+    `Done${stopped}. ${cntGH} Greenhouse, ${cntLever} Lever, ${cntAshby} Ashby, ${cntMiss} no match.`;
   document.getElementById('progressBar').style.width = '100%';
   document.getElementById('runBtn').disabled    = false;
   document.getElementById('stopBtn').disabled   = true;
@@ -356,7 +395,7 @@ function stopExperiment() {
 
 function clearAll() {
   results = [];
-  cntTested = cntGH = cntLever = cntMiss = 0;
+  cntTested = cntGH = cntLever = cntAshby = cntMiss = 0;
   document.getElementById('resultsBody').innerHTML = '';
   document.getElementById('logEl').innerHTML       = '';
   document.getElementById('progressBar').style.width = '0%';

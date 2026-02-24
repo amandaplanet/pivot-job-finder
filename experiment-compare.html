@@ -184,11 +184,19 @@
 // Each array entry is a lowercase string; job title must contain it (word-level).
 const SYNONYMS = {
   'engineer': [
+    // IC roles — 'engineer' substring catches most seniority variants automatically
     'engineer', 'developer', 'swe', 'software', 'backend', 'front end', 'frontend',
-    'full stack', 'fullstack', 'platform', 'infrastructure', 'infra', 'site reliability',
+    'full stack', 'fullstack', 'infrastructure', 'infra', 'site reliability',
     'sre', 'devops', 'dev ops', 'mobile', 'ios', 'android', 'architect',
-    'firmware', 'embedded', 'systems', 'reliability', 'security engineer',
+    'firmware', 'embedded', 'reliability', 'security engineer',
     'ml engineer', 'machine learning engineer', 'ai engineer', 'data engineer',
+    // Management & leadership (not caught by 'engineer' substring)
+    'engineering manager', 'engineering director', 'engineering lead',
+    'director of engineering', 'vp of engineering', 'vp engineering',
+    'head of engineering', 'chief technology', 'chief technical', 'cto',
+    'vp of technology', 'vp technology', 'head of technology',
+    'technical director', 'technology director',
+    'tech lead', 'technical lead',
   ],
   'product manager': [
     // Core PM titles (seniority prefixes like Senior/Staff/Lead/Principal handled by substring match)
