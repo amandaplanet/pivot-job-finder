@@ -1897,9 +1897,16 @@ function filterCompanies() {
 }
 
 function selectAll() {
-  for (const cb of document.querySelectorAll('#companyGrid input[type="checkbox"]')) {
-    if (!cb.closest('label').classList.contains('hidden')) cb.checked = true;
+  const visible = Array.from(document.querySelectorAll('#companyGrid input[type="checkbox"]'))
+    .filter(cb => !cb.closest('label').classList.contains('hidden'));
+  if (visible.length > 20) {
+    const count = visible.length;
+    const mins = Math.ceil((count / 3) * 4 / 60);
+    const pct = Math.round((count / 200) * 100);
+    const ok = confirm(`Heads up: you're selecting ${count} companies.\n\nThis will use ~${count} API calls (~${pct}% of the free JSearch monthly quota) and take around ${mins} minute${mins !== 1 ? 's' : ''}.\n\nContinue?`);
+    if (!ok) return;
   }
+  for (const cb of visible) cb.checked = true;
   updateCompanyCount();
 }
 
