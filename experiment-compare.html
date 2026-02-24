@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JSearch vs Greenhouse Comparison</title>
+<style>
+  :root {
+    --bg: #f5f7f8;
+    --surface: #ffffff;
+    --surface2: #e8f0ee;
+    --border: #c5d8d3;
+    --text: #1a2e2a;
+    --text-dim: #5f7a74;
+    --accent: #048371;
+    --green: #048371;
+    --red: #c0392b;
+    --yellow: #c08800;
+    --blue: #1e40af;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.6;
+    padding: 1.5rem; max-width: 1400px; margin: 0 auto;
+  }
+  h1 { color: var(--accent); margin-bottom: 0.25rem; font-size: 1.5rem; }
+  .subtitle { color: var(--text-dim); font-size: 0.9rem; margin-bottom: 1.5rem; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; margin-bottom: 1.25rem; }
+  .card h2 { font-size: 1rem; color: var(--accent); margin-bottom: 0.75rem; }
+  .row { display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end; }
+  .field { display: flex; flex-direction: column; gap: 0.25rem; }
+  .field label { font-size: 0.85rem; font-weight: 600; color: var(--text-dim); }
+  input[type="text"], input[type="password"], select {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 0.45rem 0.7rem; font-size: 0.9rem; color: var(--text);
+  }
+  input:focus, select:focus { outline: 2px solid var(--accent); border-color: transparent; }
+  button {
+    background: var(--accent); color: #fff; border: none;
+    padding: 0.55rem 1.25rem; border-radius: 8px;
+    font-size: 0.9rem; font-weight: 600; cursor: pointer;
+  }
+  button:hover { opacity: 0.9; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+
+  /* Side-by-side panels */
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
+  @media (max-width: 900px) { .compare-grid { grid-template-columns: 1fr; } }
+
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .panel-header {
+    padding: 0.75rem 1rem;
+    font-weight: 700; font-size: 0.95rem;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .panel-jsearch  { background: #eff6ff; border-bottom: 2px solid #93c5fd; color: #1e40af; }
+  .panel-gh       { background: #f0fdf4; border-bottom: 2px solid #86efac; color: #166534; }
+  .panel-body { padding: 0.75rem 1rem; }
+
+  .panel-stats {
+    display: flex; gap: 0.75rem; flex-wrap: wrap;
+    margin-bottom: 0.75rem; font-size: 0.8rem;
+  }
+  .stat { background: var(--surface2); border-radius: 6px; padding: 0.3rem 0.6rem; }
+  .stat strong { font-size: 1rem; font-weight: 800; }
+
+  /* Job cards */
+  .job-list { display: flex; flex-direction: column; gap: 0.5rem; max-height: 70vh; overflow-y: auto; }
+  .job-card {
+    background: var(--surface2); border-radius: 8px;
+    padding: 0.6rem 0.75rem; font-size: 0.85rem;
+  }
+  .job-title { font-weight: 700; color: var(--text); margin-bottom: 0.15rem; }
+  .job-meta { color: var(--text-dim); font-size: 0.78rem; display: flex; gap: 0.75rem; flex-wrap: wrap; }
+  .badge { display: inline-block; padding: 0.05rem 0.4rem; border-radius: 3px; font-size: 0.7rem; font-weight: 700; }
+  .badge-remote  { background: #d1fae5; color: #065f46; }
+  .badge-onsite  { background: var(--surface2); color: var(--text-dim); border: 1px solid var(--border); }
+  .badge-unknown { background: #fef3c7; color: #92400e; }
+  .badge-filtered { background: #fee2e2; color: #991b1b; font-size: 0.65rem; }
+
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .empty-state { color: var(--text-dim); font-size: 0.875rem; padding: 1rem 0; text-align: center; }
+  .error-state { color: var(--red); font-size: 0.875rem; padding: 1rem 0; }
+
+  .note { font-size: 0.8rem; color: var(--text-dim); margin-top: 0.5rem; }
+  .synonym-list { font-size: 0.75rem; color: var(--text-dim); margin-top: 0.4rem; font-style: italic; }
+
+  .spinner {
+    display: inline-block; width: 14px; height: 14px;
+    border: 2px solid currentColor; border-top-color: transparent;
+    border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<h1>JSearch vs Greenhouse — Side-by-side Comparison</h1>
+<p class="subtitle">Queries both sources for the same company + functional area so you can compare result quality, title relevance, and data accuracy.</p>
+
+<div class="card">
+  <h2>Setup</h2>
+  <div class="row" style="margin-bottom:0.75rem">
+    <div class="field">
+      <label>JSearch RapidAPI Key</label>
+      <input type="password" id="apiKey" style="width:260px" placeholder="Required for JSearch side">
+    </div>
+  </div>
+  <div class="row" style="margin-bottom:0.5rem">
+    <button onclick="loadFromSheet()" id="loadBtn">Load companies from Pivot spreadsheet</button>
+    <span style="align-self:center;font-size:0.85rem;color:var(--text-dim)">— loads companies that have an ATS slug set</span>
+  </div>
+  <div id="loadStatus" style="font-size:0.8rem;color:var(--text-dim);margin-bottom:0.75rem"></div>
+
+  <div class="row" style="margin-bottom:0.75rem">
+    <div class="field">
+      <label>Company</label>
+      <select id="companySelect" style="min-width:220px">
+        <option value="">— load spreadsheet first —</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Functional area</label>
+      <select id="functionalArea" onchange="onAreaChange()">
+        <option value="engineer">Engineering</option>
+        <option value="product manager">Product Management</option>
+        <option value="designer">Design</option>
+        <option value="data scientist">Data Science / ML</option>
+        <option value="other">Other...</option>
+      </select>
+    </div>
+    <div class="field" id="customAreaField" style="display:none">
+      <label>Custom area</label>
+      <input type="text" id="customArea" placeholder="e.g. sales, marketing..." style="width:180px">
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <button onclick="runComparison()" id="runBtn" disabled>Compare</button>
+    </div>
+  </div>
+
+  <div id="synonymNote" class="synonym-list"></div>
+</div>
+
+<div class="compare-grid" id="compareGrid" style="display:none">
+
+  <!-- JSearch panel -->
+  <div class="panel">
+    <div class="panel-header panel-jsearch">
+      <span id="jsearchSpinner"></span>
+      JSearch (fuzzy search)
+    </div>
+    <div class="panel-body">
+      <div class="panel-stats" id="jsearchStats"></div>
+      <div class="job-list" id="jsearchList"></div>
+    </div>
+  </div>
+
+  <!-- Greenhouse panel -->
+  <div class="panel">
+    <div class="panel-header panel-gh">
+      <span id="ghSpinner"></span>
+      Greenhouse (all jobs → synonym filter)
+    </div>
+    <div class="panel-body">
+      <div class="panel-stats" id="ghStats"></div>
+      <div class="job-list" id="ghList"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Synonym table ──────────────────────────────────────────────────────────────
+// Keys match the functionalAreaPreset values in the main app.
+// Each array entry is a lowercase string; job title must contain it (word-level).
+const SYNONYMS = {
+  'engineer': [
+    'engineer', 'developer', 'swe', 'software', 'backend', 'front end', 'frontend',
+    'full stack', 'fullstack', 'platform', 'infrastructure', 'infra', 'site reliability',
+    'sre', 'devops', 'dev ops', 'mobile', 'ios', 'android', 'architect',
+    'firmware', 'embedded', 'systems', 'reliability', 'security engineer',
+    'ml engineer', 'machine learning engineer', 'ai engineer', 'data engineer',
+  ],
+  'product manager': [
+    'product manager', 'product management', 'head of product', 'director of product',
+    'vp of product', 'vp product', 'cpo', 'chief product', 'product lead',
+    'product owner', 'group product', 'principal product', 'staff product',
+    'product operations', 'technical product',
+  ],
+  'designer': [
+    'designer', 'design', 'ux', 'ui ', ' ui', 'user experience', 'user research',
+    'user researcher', 'interaction design', 'visual design', 'product design',
+    'design manager', 'design lead', 'design director', 'creative director',
+    'brand design', 'motion design', 'content design', 'design strategist',
+  ],
+  'data scientist': [
+    'data scientist', 'data science', 'machine learning', 'ml ', ' ml',
+    'ai researcher', 'artificial intelligence', 'research scientist',
+    'applied scientist', 'data analyst', 'analytics engineer',
+    'quantitative', 'statistician', 'modeling', 'nlp',
+  ],
+};
+
+function getSynonyms(area) {
+  return SYNONYMS[area] || null; // null = no synonym expansion (custom area)
+}
+
+function matchesSynonyms(title, area, customText) {
+  const t = title.toLowerCase();
+  if (!area || area === '') return true; // no filter
+  if (area === 'other') {
+    if (!customText) return true;
+    return t.includes(customText.toLowerCase().trim());
+  }
+  const syns = getSynonyms(area);
+  if (!syns) return true;
+  return syns.some(s => t.includes(s));
+}
+
+// ── Spreadsheet loading ────────────────────────────────────────────────────────
+const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1fhkgcnVSpg19dfALrWN6hB4kpKRiPrAMCAHacM6_KXw/export?format=csv&gid=284520974';
+const CORS_PROXIES = [
+  u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+  u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+];
+
+let companyData = []; // [{name, atsType, atsSlug}]
+
+async function loadFromSheet() {
+  const btn = document.getElementById('loadBtn');
+  const status = document.getElementById('loadStatus');
+  btn.disabled = true;
+  status.textContent = 'Fetching spreadsheet…';
+
+  const freshUrl = SHEET_CSV_URL + '&t=' + Date.now();
+  let csvText = null;
+
+  try {
+    const r = await fetch(freshUrl, { cache: 'no-store' });
+    if (r.ok) csvText = await r.text();
+  } catch (_) {}
+
+  if (!csvText) {
+    for (const proxy of CORS_PROXIES) {
+      try { const r = await fetch(proxy(freshUrl)); if (r.ok) { csvText = await r.text(); break; } } catch (_) {}
+    }
+  }
+
+  if (!csvText) {
+    status.textContent = 'Could not fetch spreadsheet. Check your connection.';
+    btn.disabled = false;
+    return;
+  }
+
+  const lines = csvText.split('\n').filter(l => l.trim());
+  const headers = parseCSVLine(lines[0]).map(h => h.trim().toLowerCase());
+
+  const colCompany = headers.indexOf('company');
+  const colAtsType = headers.findIndex(h => h.includes('ats') && h.includes('type'));
+  const colAtsSlug = headers.findIndex(h => h.includes('ats') && h.includes('slug'));
+
+  if (colCompany === -1) { status.textContent = 'No "company" column found.'; btn.disabled = false; return; }
+
+  companyData = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cols = parseCSVLine(lines[i]);
+    const name    = (cols[colCompany] || '').trim();
+    const atsType = colAtsType !== -1 ? (cols[colAtsType] || '').trim().toLowerCase() : '';
+    const atsSlug = colAtsSlug !== -1 ? (cols[colAtsSlug] || '').trim() : '';
+    if (name) companyData.push({ name, atsType, atsSlug });
+  }
+
+  // Populate dropdown — companies with ATS data first
+  const sel = document.getElementById('companySelect');
+  sel.innerHTML = '';
+
+  const withAts    = companyData.filter(c => c.atsType && c.atsSlug);
+  const withoutAts = companyData.filter(c => !c.atsType || !c.atsSlug);
+
+  if (withAts.length) {
+    const grp = document.createElement('optgroup');
+    grp.label = `With Greenhouse/Lever slug (${withAts.length})`;
+    withAts.forEach(c => {
+      const o = document.createElement('option');
+      o.value = c.name;
+      o.textContent = `${c.name} [${c.atsType} / ${c.atsSlug}]`;
+      grp.appendChild(o);
+    });
+    sel.appendChild(grp);
+  }
+
+  if (withoutAts.length) {
+    const grp = document.createElement('optgroup');
+    grp.label = `No ATS slug — JSearch only (${withoutAts.length})`;
+    withoutAts.forEach(c => {
+      const o = document.createElement('option');
+      o.value = c.name;
+      o.textContent = c.name;
+      o.style.color = '#999';
+      grp.appendChild(o);
+    });
+    sel.appendChild(grp);
+  }
+
+  const hasAts = withAts.length > 0;
+  status.textContent = `Loaded ${companyData.length} companies — ${withAts.length} have an ATS slug.`;
+  document.getElementById('runBtn').disabled = false;
+  btn.disabled = false;
+  updateSynonymNote();
+}
+
+// ── UI helpers ────────────────────────────────────────────────────────────────
+function onAreaChange() {
+  const area = document.getElementById('functionalArea').value;
+  document.getElementById('customAreaField').style.display = area === 'other' ? '' : 'none';
+  updateSynonymNote();
+}
+
+function updateSynonymNote() {
+  const area = document.getElementById('functionalArea').value;
+  const note = document.getElementById('synonymNote');
+  if (area === 'other' || area === '') { note.textContent = ''; return; }
+  const syns = getSynonyms(area);
+  if (!syns) { note.textContent = ''; return; }
+  note.textContent = `Greenhouse filter — title must contain one of: ${syns.join(', ')}`;
+}
+
+// ── HTML stripping ─────────────────────────────────────────────────────────────
+function stripHtml(html) {
+  if (!html) return '';
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  return (tmp.textContent || tmp.innerText || '').replace(/\s+/g, ' ').trim();
+}
+
+// ── Remote detection for Greenhouse ──────────────────────────────────────────
+function ghIsRemote(job) {
+  const locName = (job.location?.name || '').toLowerCase();
+  if (locName.includes('remote')) return true;
+  // Check metadata for "Location Type" field
+  const meta = job.metadata || [];
+  const locType = meta.find(m => m.name?.toLowerCase().includes('location type'));
+  if (locType && locType.value) return String(locType.value).toLowerCase().includes('remote');
+  return null; // unknown
+}
+
+// ── Render helpers ────────────────────────────────────────────────────────────
+function remoteBadge(val) {
+  if (val === true)  return '<span class="badge badge-remote">Remote</span>';
+  if (val === false) return '<span class="badge badge-onsite">On-site</span>';
+  return '<span class="badge badge-unknown">?</span>';
+}
+
+function renderJobCard(title, company, location, remote, applyLink, extra) {
+  return `<div class="job-card">
+    <div class="job-title">${escHtml(title)}</div>
+    <div class="job-meta">
+      <span>${escHtml(location || '—')}</span>
+      ${remoteBadge(remote)}
+      ${applyLink ? `<a href="${escHtml(applyLink)}" target="_blank">Apply ↗</a>` : ''}
+      ${extra || ''}
+    </div>
+  </div>`;
+}
+
+function setSpinner(id, on) {
+  document.getElementById(id).innerHTML = on ? '<span class="spinner"></span>' : '';
+}
+
+// ── JSearch fetch ─────────────────────────────────────────────────────────────
+async function fetchJSearch(company, area, customArea, apiKey) {
+  const fa = area === 'other' ? (customArea || '') : area;
+  const query = fa ? `${fa} ${company}` : company;
+  const url = `https://jsearch.p.rapidapi.com/search?query=${encodeURIComponent(query)}&num_pages=10`;
+
+  const resp = await fetch(url, {
+    method: 'GET',
+    headers: { 'x-rapidapi-key': apiKey, 'x-rapidapi-host': 'jsearch.p.rapidapi.com' }
+  });
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  const data = await resp.json();
+  return data.data || [];
+}
+
+// ── Greenhouse fetch ──────────────────────────────────────────────────────────
+async function fetchGreenhouse(slug) {
+  const url = `https://boards-api.greenhouse.io/v1/boards/${slug}/jobs?content=true`;
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  const data = await resp.json();
+  return data.jobs || [];
+}
+
+// ── Main comparison ───────────────────────────────────────────────────────────
+async function runComparison() {
+  const apiKey     = document.getElementById('apiKey').value.trim();
+  const companyName = document.getElementById('companySelect').value;
+  const area       = document.getElementById('functionalArea').value;
+  const customArea = document.getElementById('customArea').value.trim();
+
+  if (!companyName) { alert('Select a company.'); return; }
+
+  const companyEntry = companyData.find(c => c.name === companyName);
+  const hasGH = companyEntry?.atsType === 'greenhouse' && companyEntry?.atsSlug;
+  const hasLever = companyEntry?.atsType === 'lever' && companyEntry?.atsSlug;
+  const hasAts = hasGH || hasLever;
+
+  if (!apiKey && !hasAts) {
+    alert('Enter a JSearch API key (this company has no ATS slug, so JSearch is the only option).');
+    return;
+  }
+
+  document.getElementById('compareGrid').style.display = '';
+  document.getElementById('runBtn').disabled = true;
+
+  // Clear panels
+  ['jsearchStats','jsearchList','ghStats','ghList'].forEach(id => {
+    document.getElementById(id).innerHTML = '';
+  });
+
+  const t0 = Date.now();
+
+  // Run both in parallel
+  const [jsearchResult, ghResult] = await Promise.allSettled([
+    apiKey ? runJSearch(companyName, area, customArea, apiKey) : Promise.resolve(null),
+    hasGH  ? runGreenhouse(companyEntry.atsSlug, companyName, area, customArea) : Promise.resolve(null),
+  ]);
+
+  document.getElementById('runBtn').disabled = false;
+}
+
+async function runJSearch(company, area, customArea, apiKey) {
+  setSpinner('jsearchSpinner', true);
+  const list  = document.getElementById('jsearchList');
+  const stats = document.getElementById('jsearchStats');
+
+  try {
+    const t0   = Date.now();
+    const jobs = await fetchJSearch(company, area, customArea, apiKey);
+    const ms   = Date.now() - t0;
+
+    stats.innerHTML = `
+      <div class="stat"><strong>${jobs.length}</strong> results</div>
+      <div class="stat"><strong>${(ms/1000).toFixed(1)}s</strong> fetch time</div>
+      <div class="stat" style="font-size:0.75rem;color:var(--text-dim)">query: "${area === 'other' ? customArea : area} ${company}"</div>
+    `;
+
+    if (jobs.length === 0) {
+      list.innerHTML = '<div class="empty-state">No results returned.</div>';
+    } else {
+      list.innerHTML = jobs.map(job => {
+        const loc = job.job_city && job.job_state
+          ? `${job.job_city}, ${job.job_state}`
+          : (job.job_country || '');
+        return renderJobCard(
+          job.job_title || '—',
+          job.employer_name || company,
+          loc,
+          job.job_is_remote === true ? true : job.job_is_remote === false ? false : null,
+          job.job_apply_link,
+          job.job_employment_type ? `<span style="font-size:0.72rem;color:var(--text-dim)">${escHtml(job.job_employment_type)}</span>` : ''
+        );
+      }).join('');
+    }
+  } catch (e) {
+    list.innerHTML = `<div class="error-state">Error: ${escHtml(e.message)}</div>`;
+  }
+  setSpinner('jsearchSpinner', false);
+}
+
+async function runGreenhouse(slug, company, area, customArea) {
+  setSpinner('ghSpinner', true);
+  const list  = document.getElementById('ghList');
+  const stats = document.getElementById('ghStats');
+
+  try {
+    const t0       = Date.now();
+    const allJobs  = await fetchGreenhouse(slug);
+    const ms       = Date.now() - t0;
+
+    const matched  = allJobs.filter(j => matchesSynonyms(j.title || '', area, customArea));
+    const dropped  = allJobs.length - matched.length;
+
+    stats.innerHTML = `
+      <div class="stat"><strong>${allJobs.length}</strong> total jobs</div>
+      <div class="stat"><strong>${matched.length}</strong> after filter</div>
+      <div class="stat" style="color:var(--red)"><strong>${dropped}</strong> filtered out</div>
+      <div class="stat"><strong>${(ms/1000).toFixed(1)}s</strong> fetch time</div>
+    `;
+
+    if (matched.length === 0) {
+      list.innerHTML = allJobs.length === 0
+        ? '<div class="empty-state">No jobs found on Greenhouse for this slug.</div>'
+        : `<div class="empty-state">All ${allJobs.length} jobs were filtered out by the synonym table.<br>Try broadening the synonyms or check the functional area.</div>`;
+    } else {
+      list.innerHTML = matched.map(job => {
+        const remote = ghIsRemote(job);
+        const loc    = job.location?.name || '—';
+        const desc   = stripHtml(job.content || '').slice(0, 120);
+        return renderJobCard(
+          job.title || '—',
+          job.company_name || company,
+          loc,
+          remote,
+          job.absolute_url,
+          desc ? `<span style="font-size:0.72rem;color:var(--text-dim);display:block;margin-top:0.2rem">${escHtml(desc)}…</span>` : ''
+        );
+      }).join('');
+    }
+  } catch (e) {
+    list.innerHTML = `<div class="error-state">Error: ${escHtml(e.message)}</div>`;
+  }
+  setSpinner('ghSpinner', false);
+}
+
+// ── Utilities ─────────────────────────────────────────────────────────────────
+function parseCSVLine(line) {
+  const out = []; let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') { if (inQ && line[i+1] === '"') { cur += '"'; i++; } else inQ = !inQ; }
+    else if (c === ',' && !inQ) { out.push(cur); cur = ''; }
+    else cur += c;
+  }
+  out.push(cur);
+  return out;
+}
+
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Init
+updateSynonymNote();
+</script>
+</body>
+</html>
