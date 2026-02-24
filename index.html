@@ -1911,7 +1911,7 @@ function selectAll() {
   if (visible.length > 20) {
     const count = visible.length;
     const pct = Math.round((count / 200) * 100);
-    const ok = confirm(`Heads up: you're selecting ${count} companies.\n\nThis will use ~${count} API calls (~${pct}% of the free JSearch monthly quota) and can take several hours to complete.\n\nContinue?`);
+    const ok = confirm(`Heads up: you're selecting ${count} companies.\n\nThis will use ~${count} API calls (~${pct}% of the free JSearch monthly quota).\n\nContinue?`);
     if (!ok) return;
   }
   for (const cb of visible) cb.checked = true;
