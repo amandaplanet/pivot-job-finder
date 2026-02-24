@@ -2839,23 +2839,6 @@ function toggleDetail(idx, btn) {
     keywordsHtml = '<div class="no-contact">No matching keywords found between your resume and this JD.</div>';
   }
 
-  // Preferences detail
-  let prefHtml = '';
-  if (mustHaves.length > 0) {
-    for (const p of bd.preferenceMatch.matched) {
-      prefHtml += `<div class="criteria-item"><span>${escapeHtml(p)}</span><span class="badge badge-pass">Found</span></div>`;
-    }
-    for (const p of bd.preferenceMatch.missed) {
-      prefHtml += `<div class="criteria-item"><span>${escapeHtml(p)}</span><span class="badge badge-fail">Missing</span></div>`;
-    }
-  } else {
-    prefHtml = '<div class="no-contact">No must-have preferences configured. Add them in Setup.</div>';
-  }
-
-  if (bd.compNote) {
-    prefHtml += `<div class="comp-note">${escapeHtml(bd.compNote)}</div>`;
-  }
-
   // Contact HTML
   let contactHtml = '';
   if (r.contact) {
@@ -2889,7 +2872,7 @@ function toggleDetail(idx, btn) {
     const lsklColor = le.skillsFit >= 35 ? 'var(--green)' : le.skillsFit >= 20 ? 'var(--yellow)' : 'var(--orange)';
     const ltitColor = le.titleFit >= 15 ? 'var(--green)' : le.titleFit >= 8 ? 'var(--yellow)' : 'var(--red)';
     const lexpColor = le.experienceFit >= 12 ? 'var(--green)' : le.experienceFit >= 8 ? 'var(--yellow)' : 'var(--orange)';
-    const lprefColor = le.preferencesFit >= 12 ? 'var(--green)' : le.preferencesFit >= 7 ? 'var(--yellow)' : 'var(--orange)';
+    const lcarColor = le.careerFit >= 12 ? 'var(--green)' : le.careerFit >= 7 ? 'var(--yellow)' : 'var(--orange)';
 
     let llmHtml = '';
     if (le.summary) {
@@ -2901,8 +2884,8 @@ function toggleDetail(idx, btn) {
     if (le.titleReasoning) llmHtml += `<div style="font-size:0.75rem;color:var(--text-dim);margin-top:-0.3rem;margin-bottom:0.5rem">${escapeHtml(le.titleReasoning)}</div>`;
     llmHtml += llmScoreBar('Experience Fit', le.experienceFit || 0, 15, lexpColor);
     if (le.experienceReasoning) llmHtml += `<div style="font-size:0.75rem;color:var(--text-dim);margin-top:-0.3rem;margin-bottom:0.5rem">${escapeHtml(le.experienceReasoning)}</div>`;
-    llmHtml += llmScoreBar('Preferences Fit', le.preferencesFit || 0, 15, lprefColor);
-    if (le.preferencesReasoning) llmHtml += `<div style="font-size:0.75rem;color:var(--text-dim);margin-top:-0.3rem;margin-bottom:0.5rem">${escapeHtml(le.preferencesReasoning)}</div>`;
+    llmHtml += llmScoreBar('Career Fit', le.careerFit || 0, 15, lcarColor);
+    if (le.careerReasoning) llmHtml += `<div style="font-size:0.75rem;color:var(--text-dim);margin-top:-0.3rem;margin-bottom:0.5rem">${escapeHtml(le.careerReasoning)}</div>`;
 
     if (le.strengths) {
       llmHtml += `<div class="llm-section-title">Strengths</div>`;
@@ -2929,14 +2912,10 @@ function toggleDetail(idx, btn) {
   const primaryCard = r.llmEvaluation ? llmCardHtml : `<div class="detail-card">
         <h3>Keyword Score Breakdown</h3>
         ${scoreHtml}
-        <h3 style="margin-top:0.75rem">Must-Have Preferences</h3>
-        ${prefHtml}
       </div>`;
   const secondaryCard = r.llmEvaluation ? `<div class="detail-card" style="opacity:0.85">
         <h3 style="font-size:0.85rem">Keyword Backup Score: ${r.keywordScore}<span style="font-size:0.75rem;color:var(--text-dim);font-weight:400;margin-left:0.5rem">/ 100</span></h3>
         ${scoreHtml}
-        <h3 style="margin-top:0.75rem;font-size:0.85rem">Must-Have Preferences</h3>
-        ${prefHtml}
       </div>` : llmCardHtml;
 
   detailTr.innerHTML = `<td colspan="7">
@@ -3129,7 +3108,7 @@ function evaluatePosting() {
         <div style="font-size:0.8rem;color:var(--text-dim);margin-top:0.5rem">Keyword backup score: ${evaluation.score}</div>
       </div>`;
 
-    llmEvaluatePosting(resumeText, jdText, jobTitle, [], mustHaves).then(llmResult => {
+    llmEvaluatePosting(resumeText, jdText, jobTitle, []).then(llmResult => {
       const ls = llmResult.score;
       const llmColor = ls >= 75 ? 'var(--green)' : ls >= 55 ? 'var(--yellow)' : ls >= 35 ? 'var(--orange)' : 'var(--red)';
       const llmFitLabel = ls >= 75 ? 'Strong Fit' : ls >= 55 ? 'Good Fit' : ls >= 40 ? 'Possible Fit' : 'Weak Fit';
@@ -3223,22 +3202,6 @@ function evaluatePosting() {
     keywordsHtml = '<div class="no-contact">No matching keywords found between your resume and this JD.</div>';
   }
 
-  // Preferences card
-  let prefHtml = '';
-  if (mustHaves.length > 0) {
-    for (const p of bd.preferenceMatch.matched) {
-      prefHtml += `<div class="criteria-item"><span>${escapeHtml(p)}</span><span class="badge badge-pass">Found</span></div>`;
-    }
-    for (const p of bd.preferenceMatch.missed) {
-      prefHtml += `<div class="criteria-item"><span>${escapeHtml(p)}</span><span class="badge badge-fail">Missing</span></div>`;
-    }
-  } else {
-    prefHtml = '<div class="no-contact">No must-have preferences configured. Add them in Setup.</div>';
-  }
-  if (bd.compNote) {
-    prefHtml += `<div class="comp-note">${escapeHtml(bd.compNote)}</div>`;
-  }
-
   // Contact card
   let contactHtml = '';
   if (contact) {
@@ -3283,10 +3246,6 @@ function evaluatePosting() {
         <h3>Resume Keyword Matches</h3>
         ${keywordsHtml}
       </div>
-      <div class="detail-card">
-        <h3>Must-Have Preferences</h3>
-        ${prefHtml}
-      </div>
     `;
   } else {
     document.getElementById('evalBreakdown').innerHTML = `
@@ -3300,10 +3259,6 @@ function evaluatePosting() {
         <h3>Resume Keyword Matches</h3>
         ${keywordsHtml}
       </div>
-      <div class="detail-card">
-        <h3>Must-Have Preferences</h3>
-        ${prefHtml}
-      </div>
     `;
   }
 
@@ -3312,12 +3267,11 @@ function evaluatePosting() {
 // ============================================================
 // LLM EVALUATION (Claude API)
 // ============================================================
-async function llmEvaluatePosting(resume, jdText, jobTitle, titleKws, mustHavePrefs) {
+async function llmEvaluatePosting(resume, jdText, jobTitle, titleKws) {
   const anthropicKey = document.getElementById('anthropicKey').value.trim();
   if (!anthropicKey) throw new Error('No Anthropic API key configured');
 
   const titleKwList = (titleKws || []).join(', ') || '(none specified)';
-  const mustHaveList = (mustHavePrefs || []).join(', ') || '(none specified)';
 
   const prompt = `You are a job fit evaluator. Compare the candidate's resume against the job description and score the fit.
 
@@ -3330,7 +3284,6 @@ JOB DESCRIPTION:
 ${(jdText || '').slice(0, 6000)}
 
 CANDIDATE'S TARGET TITLE KEYWORDS: ${titleKwList}
-CANDIDATE'S MUST-HAVE PREFERENCES: ${mustHaveList}
 
 Score the fit using these categories. Focus on SEMANTIC and CONCEPTUAL matching — recognize transferable skills, synonymous terminology, and relevant experience even when exact words differ.
 
@@ -3343,8 +3296,8 @@ Return ONLY valid JSON with this exact structure (no markdown, no code fences):
   "titleReasoning": "<1 sentence>",
   "experienceFit": <0-15>,
   "experienceReasoning": "<1 sentence>",
-  "preferencesFit": <0-15>,
-  "preferencesReasoning": "<1 sentence>",
+  "careerFit": <0-15>,
+  "careerReasoning": "<1 sentence>",
   "summary": "<2-3 sentence qualitative assessment>",
   "gaps": "<key things the JD wants that the resume lacks>",
   "strengths": "<where the resume particularly shines for this role>"
@@ -3354,7 +3307,7 @@ Scoring guidance:
 - skillsFit (0-50): How well do the candidate's technical skills, tools, and domain expertise match what the JD asks for? Consider synonyms and transferable skills.
 - titleFit (0-20): Does the job title align with the candidate's target roles? Consider seniority level and role type.
 - experienceFit (0-15): Does the candidate's experience level match what's required?
-- preferencesFit (0-15): If the candidate specified must-have preferences, does the JD mention or align with them? If no preferences specified, give 12/15.`;
+- careerFit (0-15): Does this role represent a sensible next step given the candidate's background and career trajectory? Consider growth direction, industry alignment, and role scope.`;
 
   const resp = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -3394,7 +3347,7 @@ Scoring guidance:
     result.skillsFit = Math.max(0, Math.min(50, Math.round(result.skillsFit || 0)));
     result.titleFit = Math.max(0, Math.min(20, Math.round(result.titleFit || 0)));
     result.experienceFit = Math.max(0, Math.min(15, Math.round(result.experienceFit || 0)));
-    result.preferencesFit = Math.max(0, Math.min(15, Math.round(result.preferencesFit || 0)));
+    result.careerFit = Math.max(0, Math.min(15, Math.round(result.careerFit || 0)));
     return result;
   } catch (e) {
     throw new Error('Failed to parse LLM response as JSON: ' + text.slice(0, 200));
@@ -3466,7 +3419,7 @@ async function runLLMEvaluation(forceRerun) {
       logScan(`LLM error for ${r.company} - ${r.title}: ${err.message}`);
       // Set a minimal error result so we don't retry on re-render
       r.llmEvaluation = { score: 0, error: err.message, summary: 'LLM evaluation failed: ' + err.message,
-        skillsFit: 0, titleFit: 0, experienceFit: 0, preferencesFit: 0 };
+        skillsFit: 0, titleFit: 0, experienceFit: 0, careerFit: 0 };
       // Backfill keyword scoring on error too, so detail rows work
       if (!r.evaluation) {
         r.evaluation = evaluateResumeFit(r.description || '', r.title);
@@ -3527,7 +3480,7 @@ function renderEvalLLMCard(le) {
   const lsklColor = le.skillsFit >= 35 ? 'var(--green)' : le.skillsFit >= 20 ? 'var(--yellow)' : 'var(--orange)';
   const ltitColor = le.titleFit >= 15 ? 'var(--green)' : le.titleFit >= 8 ? 'var(--yellow)' : 'var(--red)';
   const lexpColor = le.experienceFit >= 12 ? 'var(--green)' : le.experienceFit >= 8 ? 'var(--yellow)' : 'var(--orange)';
-  const lprefColor = le.preferencesFit >= 12 ? 'var(--green)' : le.preferencesFit >= 7 ? 'var(--yellow)' : 'var(--orange)';
+  const lcarColor = le.careerFit >= 12 ? 'var(--green)' : le.careerFit >= 7 ? 'var(--yellow)' : 'var(--orange)';
 
   let html = `<h3 style="color:var(--accent)">LLM Evaluation <span class="llm-badge">Claude</span></h3>`;
   if (le.summary) html += `<div class="llm-summary-text">${escapeHtml(le.summary)}</div>`;
@@ -3537,8 +3490,8 @@ function renderEvalLLMCard(le) {
   if (le.titleReasoning) html += `<div style="font-size:0.75rem;color:var(--text-dim);margin-top:-0.3rem;margin-bottom:0.5rem">${escapeHtml(le.titleReasoning)}</div>`;
   html += llmScoreBar('Experience Fit', le.experienceFit || 0, 15, lexpColor);
   if (le.experienceReasoning) html += `<div style="font-size:0.75rem;color:var(--text-dim);margin-top:-0.3rem;margin-bottom:0.5rem">${escapeHtml(le.experienceReasoning)}</div>`;
-  html += llmScoreBar('Preferences Fit', le.preferencesFit || 0, 15, lprefColor);
-  if (le.preferencesReasoning) html += `<div style="font-size:0.75rem;color:var(--text-dim);margin-top:-0.3rem;margin-bottom:0.5rem">${escapeHtml(le.preferencesReasoning)}</div>`;
+  html += llmScoreBar('Career Fit', le.careerFit || 0, 15, lcarColor);
+  if (le.careerReasoning) html += `<div style="font-size:0.75rem;color:var(--text-dim);margin-top:-0.3rem;margin-bottom:0.5rem">${escapeHtml(le.careerReasoning)}</div>`;
 
   if (le.strengths) {
     html += `<div class="llm-section-title">Strengths</div>`;
