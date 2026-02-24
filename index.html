@@ -2925,20 +2925,18 @@ function toggleDetail(idx, tr) {
     </div>`;
   }
 
-  // When LLM is available: LLM card first (primary), keyword card second (supplementary)
-  // When no LLM: keyword card first (primary)
+  // When LLM is available: show LLM card only (2 cols)
+  // When no LLM: show Keyword Score card + LLM "add key" prompt (3 cols)
   const primaryCard = r.llmEvaluation ? llmCardHtml : `<div class="detail-card">
         <h3>Keyword Score Breakdown</h3>
         ${scoreHtml}
       </div>`;
-  const secondaryCard = r.llmEvaluation ? `<div class="detail-card" style="opacity:0.85">
-        <h3 style="font-size:0.85rem">Keyword Backup Score: ${r.keywordScore}<span style="font-size:0.75rem;color:var(--text-dim);font-weight:400;margin-left:0.5rem">/ 100</span></h3>
-        ${scoreHtml}
-      </div>` : llmCardHtml;
+  const secondaryCard = r.llmEvaluation ? '' : llmCardHtml;
+  const cols = r.llmEvaluation ? '1fr 1fr' : '1fr 1fr 1fr';
 
   detailTr.innerHTML = `<td colspan="7">
     ${r.contact ? `<div class="contact-banner">${contactHtml}</div>` : ''}
-    <div class="detail-grid" style="grid-template-columns:1fr 1fr 1fr">
+    <div class="detail-grid" style="grid-template-columns:${cols}">
       ${primaryCard}
       ${secondaryCard}
       <div class="detail-card">
@@ -3252,22 +3250,21 @@ function evaluatePosting() {
   // Contact banner at top (only if company entered)
   const contactBannerHtml = companyName ? `<div class="contact-banner">${contactHtml}</div>` : '';
 
-  // Assemble the grid — LLM first when key exists
+  // Assemble the grid — LLM first when key exists (2 cols); keyword + prompt when no key (3 cols)
+  const evalGrid = document.getElementById('evalBreakdown');
   if (hasLLMKey) {
-    document.getElementById('evalBreakdown').innerHTML = `
+    evalGrid.style.gridTemplateColumns = '1fr 1fr';
+    evalGrid.innerHTML = `
       ${contactBannerHtml}
       ${llmCard}
-      <div class="detail-card" style="opacity:0.85">
-        <h3 style="font-size:0.9rem">Keyword Backup Breakdown</h3>
-        ${scoreHtml}
-      </div>
       <div class="detail-card">
         <h3>Resume Keyword Matches</h3>
         ${keywordsHtml}
       </div>
     `;
   } else {
-    document.getElementById('evalBreakdown').innerHTML = `
+    evalGrid.style.gridTemplateColumns = '1fr 1fr 1fr';
+    evalGrid.innerHTML = `
       ${contactBannerHtml}
       <div class="detail-card">
         <h3>Keyword Score Breakdown</h3>
