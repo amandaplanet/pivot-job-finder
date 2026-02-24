@@ -191,10 +191,17 @@ const SYNONYMS = {
     'ml engineer', 'machine learning engineer', 'ai engineer', 'data engineer',
   ],
   'product manager': [
-    'product manager', 'product management', 'head of product', 'director of product',
-    'vp of product', 'vp product', 'cpo', 'chief product', 'product lead',
-    'product owner', 'group product', 'principal product', 'staff product',
-    'product operations', 'technical product',
+    // Core PM titles (seniority prefixes like Senior/Staff/Lead/Principal handled by substring match)
+    'product manager', 'product management', 'product lead', 'product owner',
+    'product strategist', 'product specialist', 'product director', 'product analyst',
+    'group product', 'head of product', 'chief product', 'cpo',
+    'director of product', 'vp of product', 'vp product',
+    'principal product', 'staff product', 'technical product',
+    'product operations', 'growth product',
+    // Program & platform management (common ex-Pivot paths)
+    'program manager',        // covers Program Manager, Technical Program Manager,
+                              // Product Program Manager, Staff Technical Program Manager
+    'platform manager',       // covers Platform Manager, Senior/Staff Platform Manager
   ],
   'designer': [
     'designer', 'design', 'ux', 'ui ', ' ui', 'user experience', 'user research',
