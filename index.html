@@ -2743,6 +2743,8 @@ function renderResults() {
     const scoreDisplay = hasScore ? r.score : '<span class="llm-spinner" style="width:16px;height:16px;border-width:2px;display:inline-block;vertical-align:middle"></span>';
 
     const tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.addEventListener('click', (e) => { if (!e.target.closest('a')) toggleDetail(${i}, tr); });
     tr.innerHTML = `
       <td class="score-cell" style="color:${scoreColor}">${scoreDisplay}<div style="font-size:0.65rem;font-weight:400;color:var(--text-dim)">${scoreIndicator} ${fitLabel}</div></td>
       <td class="company-cell">${escapeHtml(r.company)}</td>
@@ -2750,7 +2752,7 @@ function renderResults() {
       <td class="title-cell">${r.applyLink ? `<a href="${escapeHtml(r.applyLink)}" target="_blank">${escapeHtml(r.title)}</a>` : escapeHtml(r.title)}</td>
       <td class="location-cell">${escapeHtml(r.location)}</td>
       <td><span class="remote-badge ${remoteBadge}">${r.remote}</span></td>
-      <td><button class="expand-btn" onclick="toggleDetail(${i}, this)">+ Details</button></td>
+      <td><button class="expand-btn">+ Details</button></td>
     `;
     tbody.appendChild(tr);
   }
@@ -2759,18 +2761,18 @@ function renderResults() {
   if (titleFilterChips.length > 0) filterResultsByTitle();
 }
 
-function toggleDetail(idx, btn) {
+function toggleDetail(idx, tr) {
   const r = allResults[idx];
-  const tr = btn.closest('tr');
+  const btn = tr.querySelector('.expand-btn');
   const existingDetail = tr.nextElementSibling;
 
   if (existingDetail && existingDetail.classList.contains('detail-row')) {
     existingDetail.remove();
-    btn.textContent = '+ Details';
+    if (btn) btn.textContent = '+ Details';
     return;
   }
 
-  btn.textContent = '- Details';
+  if (btn) btn.textContent = '- Details';
   const detailTr = document.createElement('tr');
   detailTr.classList.add('detail-row');
 
