@@ -1662,9 +1662,12 @@ async function loadCompanies() {
   let csvText = null;
   let lastErr = null;
 
+  // Add cache-buster so we always get fresh data from Google Sheets
+  const freshUrl = SHEET_CSV_URL + '&t=' + Date.now();
+
   // Try direct fetch first (works if served from a web server with CORS)
   try {
-    const resp = await fetch(SHEET_CSV_URL);
+    const resp = await fetch(freshUrl, { cache: 'no-store' });
     if (resp.ok) csvText = await resp.text();
   } catch (e) { lastErr = e; }
 
@@ -1673,7 +1676,7 @@ async function loadCompanies() {
     for (const proxyFn of CORS_PROXIES) {
       try {
         status.textContent = 'Trying alternate fetch method...';
-        const proxyUrl = proxyFn(SHEET_CSV_URL);
+        const proxyUrl = proxyFn(freshUrl);
         const resp = await fetch(proxyUrl);
         if (resp.ok) {
           csvText = await resp.text();
@@ -1901,9 +1904,8 @@ function selectAll() {
     .filter(cb => !cb.closest('label').classList.contains('hidden'));
   if (visible.length > 20) {
     const count = visible.length;
-    const mins = Math.ceil((count / 3) * 4 / 60);
     const pct = Math.round((count / 200) * 100);
-    const ok = confirm(`Heads up: you're selecting ${count} companies.\n\nThis will use ~${count} API calls (~${pct}% of the free JSearch monthly quota) and take around ${mins} minute${mins !== 1 ? 's' : ''}.\n\nContinue?`);
+    const ok = confirm(`Heads up: you're selecting ${count} companies.\n\nThis will use ~${count} API calls (~${pct}% of the free JSearch monthly quota) and can take several hours to complete.\n\nContinue?`);
     if (!ok) return;
   }
   for (const cb of visible) cb.checked = true;
