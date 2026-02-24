@@ -815,7 +815,7 @@
               <div class="preset-dropdown" id="wizardTitleSuggestionsDropdown"></div>
             </div>
             <div class="tag-container" id="wizardTitleChipsContainer" onclick="document.getElementById('wizardTitleChipInput').focus()" style="flex:1;cursor:text">
-              <input type="text" class="tag-input" id="wizardTitleChipInput" placeholder="Or type a title and press Enter..." onkeydown="if(event.key==='Enter'){addWizardTitleChip();event.preventDefault();}">
+              <input type="text" class="tag-input" id="wizardTitleChipInput" placeholder="Or type a title and press Enter..." onkeydown="if(event.key==='Enter'||event.key==='Tab'){addWizardTitleChip();event.preventDefault();}">
             </div>
           </div>
         </div>
@@ -1049,7 +1049,7 @@
     </div>
     <div style="display:flex;gap:0.5rem;align-items:flex-start">
       <div class="tag-container" id="titleFilterChips" onclick="document.getElementById('titleFilterInput').focus()" style="flex:1;min-height:36px;cursor:text;align-items:center">
-        <input type="text" class="tag-input" id="titleFilterInput" placeholder="Narrow by job title — type and press Enter..." onkeydown="if(event.key==='Enter'){addTitleChip();event.preventDefault();}">
+        <input type="text" class="tag-input" id="titleFilterInput" placeholder="Narrow by job title — type and press Enter..." onkeydown="if(event.key==='Enter'||event.key==='Tab'){addTitleChip();event.preventDefault();}">
       </div>
       <button class="btn-small btn-secondary" onclick="clearTitleFilter()">Clear</button>
     </div>
@@ -1134,7 +1134,7 @@
             <div class="preset-dropdown" id="setupTitleSuggestionsDropdown"></div>
           </div>
           <div class="tag-container" id="defaultTitleChipsContainer" onclick="document.getElementById('defaultTitleChipInput').focus()" style="flex:1;cursor:text">
-            <input type="text" class="tag-input" id="defaultTitleChipInput" placeholder="Or type a title and press Enter..." onkeydown="if(event.key==='Enter'){addDefaultTitleChip();event.preventDefault();}">
+            <input type="text" class="tag-input" id="defaultTitleChipInput" placeholder="Or type a title and press Enter..." onkeydown="if(event.key==='Enter'||event.key==='Tab'){addDefaultTitleChip();event.preventDefault();}">
           </div>
         </div>
       </div>
