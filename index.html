@@ -1034,7 +1034,6 @@
     <button class="btn-secondary" onclick="stopScan()" id="stopBtn" disabled>Stop</button>
     <button class="btn-secondary btn-danger" onclick="clearResults()" id="clearBtn" style="display:none">Clear & start over</button>
     <button class="btn-secondary" onclick="exportCSV()" id="exportBtn" disabled>Export CSV</button>
-    <button class="btn-secondary" onclick="runLLMEvaluation(true)" id="llmEvalBtn" disabled style="background:rgba(4,131,113,0.08);color:var(--accent);border:1px solid var(--accent)">Re-run LLM Evaluation</button>
   </div>
   <div class="progress-container" id="progressContainer">
     <div class="progress-text" id="progressText">Ready</div>
@@ -1499,7 +1498,6 @@ const WIZARD_STEPS = 7;
       document.getElementById('resultsSection').style.display = '';
       renderResults();
       document.getElementById('exportBtn').disabled = false;
-      updateLLMButtonState();
       updateCompanyGridScannedState();
 
       const age = Date.now() - cached.timestamp;
@@ -1827,7 +1825,6 @@ function clearResults() {
   document.getElementById('scanLog').innerHTML = '';
   document.getElementById('progressContainer').classList.remove('visible');
   document.getElementById('exportBtn').disabled = true;
-  document.getElementById('llmEvalBtn').disabled = true;
   document.getElementById('clearBtn').style.display = 'none';
   document.getElementById('scanBtn').textContent = 'Search for Jobs';
   // Reset title filter chips to defaults
@@ -2414,7 +2411,6 @@ async function startScan() {
   document.getElementById('scanBtn').disabled = false;
   document.getElementById('stopBtn').disabled = true;
   document.getElementById('exportBtn').disabled = allResults.length === 0;
-  updateLLMButtonState();
   document.getElementById('scanBtn').textContent = 'Search for Jobs';
 
   // Auto-trigger LLM evaluation if Anthropic key is present
@@ -3382,13 +3378,6 @@ Scoring guidance:
 // ============================================================
 let llmEvaluating = false;
 
-function updateLLMButtonState() {
-  const btn = document.getElementById('llmEvalBtn');
-  const hasKey = document.getElementById('anthropicKey').value.trim().length > 0;
-  const hasResults = allResults.length > 0;
-  btn.disabled = !hasKey || !hasResults || llmEvaluating || scanning;
-}
-
 async function runLLMEvaluation(forceRerun) {
   const anthropicKey = document.getElementById('anthropicKey').value.trim();
   if (!anthropicKey) { alert('Please add your Anthropic API key in Setup & Preferences.'); return; }
@@ -3403,7 +3392,6 @@ async function runLLMEvaluation(forceRerun) {
   }
 
   llmEvaluating = true;
-  updateLLMButtonState();
   gtag('event', 'llm_evaluate_start', { job_count: allResults.length, force_rerun: !!forceRerun });
 
   // Refresh resume
@@ -3468,7 +3456,6 @@ async function runLLMEvaluation(forceRerun) {
   allResults.sort((a, b) => b.score - a.score);
 
   llmEvaluating = false;
-  updateLLMButtonState();
   renderResults();
   progressText.textContent = `LLM Evaluation complete! ${completed} evaluated${errors > 0 ? `, ${errors} errors` : ''}.`;
 
