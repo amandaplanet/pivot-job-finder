@@ -1862,23 +1862,22 @@ function showCompanyPopover(c, anchor) {
 
     const MARGIN = 8;
     const rect = anchor.getBoundingClientRect();
-    const ph = pop.offsetHeight; // already capped by CSS max-height
+    const ph = pop.offsetHeight;
     const pw = pop.offsetWidth;
-    const spaceBelow = window.innerHeight - rect.bottom - MARGIN;
-    const spaceAbove = rect.top - MARGIN;
 
-    let top;
-    if (spaceBelow >= ph || spaceBelow >= spaceAbove) {
-      top = rect.bottom + 6;
+    // Prefer appearing to the right so it doesn't cover grid items below
+    let left;
+    if (rect.right + pw + MARGIN <= window.innerWidth) {
+      left = rect.right + 6;
     } else {
-      top = rect.top - ph - 6;
+      left = rect.left - pw - 6;
     }
-    // Clamp so it never goes off-screen
+    left = Math.max(MARGIN, Math.min(left, window.innerWidth - pw - MARGIN));
+
+    // Align top with anchor, clamp to viewport
+    let top = rect.top;
     top = Math.max(MARGIN, Math.min(top, window.innerHeight - ph - MARGIN));
 
-    let left = rect.left;
-    if (left + pw > window.innerWidth - MARGIN) left = window.innerWidth - pw - MARGIN;
-    if (left < MARGIN) left = MARGIN;
     pop.style.top = top + 'px';
     pop.style.left = left + 'px';
   }, 400);
