@@ -1,0 +1,3684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Pivot Job Finder</title>
+<style>
+  :root {
+    --bg: #f5f7f8;
+    --surface: #ffffff;
+    --surface2: #e8f0ee;
+    --border: #c5d8d3;
+    --text: #1a2e2a;
+    --text-dim: #5f7a74;
+    --accent: #048371;
+    --green: #048371;
+    --yellow: #c08800;
+    --red: #c0392b;
+    --orange: #d4740e;
+    --purple: #03665a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 1.5rem;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  h1 { color: var(--accent); margin-bottom: 0.25rem; font-size: 1.75rem; }
+  .subtitle { color: var(--text-dim); margin-bottom: 1.5rem; font-size: 0.95rem; }
+
+  /* Controls */
+  .controls {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .controls h2 {
+    color: var(--accent);
+    font-size: 1.15rem;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+  }
+  .controls h2 .toggle-arrow { font-size: 0.8rem; color: var(--text-dim); }
+  .collapsible-body { overflow: hidden; transition: max-height 0.3s ease; }
+  .collapsible-body.collapsed { max-height: 0 !important; }
+  .control-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.75rem;
+  }
+  .control-row:last-child { margin-bottom: 0; }
+  .control-row label { font-weight: 600; white-space: nowrap; min-width: 130px; }
+  input[type="text"], input[type="number"], input[type="password"] {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
+    flex: 1;
+    min-width: 200px;
+  }
+  input[type="text"]:focus, input[type="number"]:focus, input[type="password"]:focus,
+  textarea:focus { outline: 2px solid var(--accent); border-color: transparent; }
+  textarea {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+    width: 100%;
+    min-height: 120px;
+    resize: vertical;
+    font-family: inherit;
+    line-height: 1.5;
+  }
+  button {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 0.6rem 1.5rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  button:hover { opacity: 0.9; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-danger { background: var(--red); color: #fff; }
+  .btn-small { padding: 0.35rem 0.75rem; font-size: 0.85rem; }
+  .btn-green { background: var(--green); color: #fff; }
+
+  .form-section { margin-bottom: 1rem; }
+  .form-section-title { font-weight: 600; color: var(--accent); font-size: 0.95rem; margin-bottom: 0.4rem; }
+  .form-hint { font-size: 0.8rem; color: var(--text-dim); margin-top: 0.2rem; }
+
+  /* Tag input */
+  .tag-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    padding: 0.4rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    min-height: 38px;
+    align-items: center;
+    cursor: text;
+  }
+  .tag-container:focus-within { outline: 2px solid var(--accent); border-color: transparent; }
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: var(--accent);
+    color: #fff;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  .tag .tag-remove {
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    opacity: 0.7;
+  }
+  .tag .tag-remove:hover { opacity: 1; }
+  .tag-input {
+    border: none;
+    background: none;
+    color: var(--text);
+    font-size: 0.85rem;
+    outline: none;
+    min-width: 120px;
+    flex: 1;
+    padding: 0.2rem;
+  }
+
+  /* File upload */
+  .file-upload-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 0.4rem;
+  }
+  .file-upload-row input[type="file"] { display: none; }
+  .file-status { font-size: 0.8rem; color: var(--text-dim); }
+
+  /* Progress */
+  .progress-container { margin-top: 1rem; display: none; }
+  .progress-container.visible { display: block; }
+  .progress-bar-outer {
+    height: 12px;
+    background: var(--surface2);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-top: 0.4rem;
+  }
+  .progress-bar-inner {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 6px;
+    transition: width 0.3s ease;
+    width: 0%;
+  }
+  .progress-text { font-size: 0.85rem; color: var(--text-dim); }
+
+  /* Company checklist */
+  .company-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .company-section h2 { color: var(--accent); font-size: 1.15rem; margin-bottom: 0.5rem; }
+  .company-controls { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; flex-wrap: wrap; align-items: center; }
+  .company-search {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.4rem 0.7rem;
+    font-size: 0.85rem;
+    width: 200px;
+  }
+  .company-search:focus { outline: 2px solid var(--accent); border-color: transparent; }
+  .company-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 0.3rem;
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 0.25rem;
+  }
+  .company-grid label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    padding: 0.25rem 0.4rem;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .company-grid label:hover { background: var(--surface2); }
+  .company-grid label.hidden { display: none; }
+  .company-grid label.scanned { color: var(--text-dim); }
+  .company-grid label.scanned::after { content: ' ✓'; color: var(--green); font-size: 0.75rem; }
+  .company-grid input[type="checkbox"] { accent-color: var(--accent); }
+  .company-count { font-size: 0.85rem; color: var(--text-dim); }
+  .load-status { font-size: 0.85rem; color: var(--text-dim); margin-left: 0.5rem; }
+  .load-status.error { color: var(--red); }
+  .load-status.success { color: var(--green); }
+
+  /* Scan controls bar */
+  .scan-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+
+  /* Results table */
+  .results-section { margin-top: 1.25rem; }
+  .results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .results-header h2 { color: var(--accent); font-size: 1.15rem; }
+  .result-stats { font-size: 0.85rem; color: var(--text-dim); }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+  thead th {
+    background: var(--surface2);
+    padding: 0.6rem 0.75rem;
+    text-align: left;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+  thead th:hover { color: var(--accent); }
+  thead th .sort-arrow { font-size: 0.7rem; margin-left: 0.3rem; }
+  tbody tr { border-bottom: 1px solid var(--border); }
+  tbody tr:hover { background: rgba(4, 131, 113, 0.05); }
+  tbody td { padding: 0.55rem 0.75rem; vertical-align: top; }
+  .score-cell {
+    font-weight: 700;
+    font-size: 1rem;
+    text-align: center;
+    min-width: 50px;
+  }
+  .title-cell { max-width: 300px; }
+  .title-cell a { color: var(--accent); text-decoration: none; }
+  .title-cell a:hover { text-decoration: underline; }
+  .company-cell { font-weight: 600; }
+  .location-cell { color: var(--text-dim); font-size: 0.85rem; }
+  .remote-badge {
+    display: inline-block;
+    padding: 0.1rem 0.45rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .remote-yes { background: #d1fae5; color: #065f46; }
+  .remote-no { background: #fee2e2; color: #991b1b; }
+  .remote-unknown { background: var(--surface2); color: var(--text-dim); }
+  .expand-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+  }
+  .expand-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Expanded detail row */
+  .detail-row td {
+    padding: 1rem;
+    background: var(--surface);
+  }
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  @media (max-width: 800px) { .detail-grid { grid-template-columns: 1fr; } }
+  .detail-card {
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 0.85rem;
+  }
+  .detail-card h3 { color: var(--accent); font-size: 0.95rem; margin-bottom: 0.5rem; }
+  .criteria-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.35rem 0;
+    font-size: 0.85rem;
+    border-bottom: 1px solid rgba(71,85,105,0.3);
+  }
+  .criteria-item:last-child { border-bottom: none; }
+  .badge {
+    padding: 0.1rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .badge-pass { background: #d1fae5; color: #065f46; }
+  .badge-partial { background: #fef3c7; color: #92400e; }
+  .badge-fail { background: #fee2e2; color: #991b1b; }
+  .badge-unknown { background: var(--surface2); color: var(--text-dim); }
+  .fit-item { font-size: 0.85rem; padding: 0.2rem 0; padding-left: 1rem; position: relative; }
+  .fit-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.55rem;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+  }
+  .fit-match::before { background: var(--green); }
+  .fit-gap::before { background: var(--red); }
+  .fit-stretch::before { background: var(--yellow); }
+  .contact-info {
+    border-left: 3px solid var(--green);
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.5rem;
+    background: rgba(4,131,113,0.05);
+    border-radius: 0 6px 6px 0;
+    font-size: 0.85rem;
+  }
+  .contact-name { font-weight: 600; color: var(--green); }
+  .contact-detail { color: var(--text-dim); font-size: 0.8rem; }
+  .no-contact { color: var(--text-dim); font-style: italic; font-size: 0.85rem; }
+  .contact-banner { margin-bottom: 0.75rem; }
+  .contact-banner .contact-info { border-left-width: 4px; }
+  .comp-note { padding: 0.4rem 0.6rem; background: var(--surface); border-radius: 4px; font-size: 0.85rem; margin-top: 0.4rem; }
+  .keyword-highlight { background: rgba(4,131,113,0.12); border-radius: 2px; padding: 0 2px; }
+
+  .table-wrapper {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  .error-log { margin-top: 1rem; }
+  .error-item { font-size: 0.85rem; color: var(--red); padding: 0.2rem 0; }
+  .scan-log { font-size: 0.8rem; color: var(--text-dim); max-height: 100px; overflow-y: auto; margin-top: 0.5rem; }
+
+  .saved-indicator {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #fff;
+    background: var(--green);
+    padding: 0.5rem 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    z-index: 500;
+    pointer-events: none;
+  }
+  .saved-indicator.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .wizard-subtitle { color: var(--accent); font-size: 1.1rem; font-weight: 600; line-height: 1.4; margin-bottom: 0.25rem; }
+
+  /* Setup status summary (shown when collapsed) */
+  .setup-summary {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1rem;
+    margin-top: -0.25rem;
+  }
+  .setup-summary .summary-item { white-space: nowrap; }
+  .setup-summary .summary-ok { color: var(--green); }
+  .setup-summary .summary-missing { color: var(--text-dim); font-style: italic; }
+  .collapsible-body.collapsed + .setup-summary { display: flex; }
+  .collapsible-body:not(.collapsed) + .setup-summary { display: none; }
+
+  /* Tab navigation */
+  .tab-bar {
+    display: flex;
+    gap: 0;
+    margin-bottom: 1.25rem;
+    border-bottom: 2px solid var(--border);
+  }
+  .tab-btn {
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: var(--text-dim);
+    padding: 0.65rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: -2px;
+    border-radius: 0;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .tab-btn:hover { color: var(--text); opacity: 1; }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* Evaluate tab */
+  .eval-form { margin-bottom: 1.25rem; }
+  .eval-form .form-section { margin-bottom: 1rem; }
+  .eval-results {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem;
+    display: none;
+  }
+  .eval-results.visible { display: block; }
+  .eval-score-hero {
+    text-align: center;
+    margin-bottom: 1.25rem;
+  }
+  .eval-score-hero .score-value {
+    font-size: 3rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .eval-score-hero .score-label {
+    font-size: 1rem;
+    color: var(--text-dim);
+    margin-top: 0.25rem;
+  }
+
+  /* LLM evaluation styles */
+  .llm-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: llm-spin 0.8s linear infinite;
+    vertical-align: middle;
+  }
+  @keyframes llm-spin { to { transform: rotate(360deg); } }
+
+  .llm-badge {
+    display: inline-block;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    background: rgba(4,131,113,0.1);
+    color: var(--purple);
+    margin-left: 0.3rem;
+  }
+
+  .eval-dual-hero {
+    display: flex;
+    justify-content: center;
+    gap: 3rem;
+    margin-bottom: 1.25rem;
+  }
+  .eval-dual-hero .score-block { text-align: center; }
+  .eval-dual-hero .score-value {
+    font-size: 3rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .eval-dual-hero .score-label {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin-top: 0.25rem;
+  }
+  .eval-dual-hero .score-method {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-top: 0.15rem;
+  }
+
+  .llm-summary-text {
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--text);
+    margin-bottom: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    background: rgba(4,131,113,0.04);
+    border-radius: 6px;
+    border-left: 3px solid var(--accent);
+  }
+
+  .llm-section-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 0.3rem;
+    margin-top: 0.5rem;
+  }
+
+  .llm-note {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    font-style: italic;
+    padding: 0.5rem;
+  }
+
+  /* Preset Dropdowns */
+  .preset-wrapper { position: relative; display: inline-flex; }
+  .preset-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 100;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    padding: 0.5rem;
+    min-width: 240px;
+    max-height: 280px;
+    overflow-y: auto;
+    margin-top: 0.25rem;
+  }
+  .preset-dropdown.open { display: block; }
+  .preset-dropdown label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.3rem 0.4rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    min-width: 0;
+    font-weight: 400;
+    white-space: nowrap;
+  }
+  .preset-dropdown label:hover { background: var(--surface2); }
+  .preset-dropdown label.already-added { color: var(--text-dim); }
+  .preset-dropdown input[type="checkbox"] { accent-color: var(--accent); flex-shrink: 0; }
+
+  /* Company hover popover */
+  #companyPopover {
+    position: fixed;
+    z-index: 9999;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.13);
+    max-width: 300px;
+    min-width: 180px;
+    max-height: min(380px, 60vh);
+    overflow-y: auto;
+    display: none;
+  }
+  .pop-name { font-weight: 700; color: var(--accent); margin-bottom: 0.5rem; font-size: 0.9rem; }
+  .pop-row { display: flex; gap: 0.5rem; font-size: 0.8rem; margin-bottom: 0.2rem; line-height: 1.4; }
+  .pop-lbl { color: var(--text-dim); font-weight: 600; min-width: 58px; flex-shrink: 0; }
+
+  /* Setup Wizard */
+  .wizard-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+  .wizard-overlay.hidden { display: none; }
+  .wizard-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 2rem;
+    position: relative;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+  }
+  .wizard-progress {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .wizard-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--surface2);
+    transition: background 0.2s;
+  }
+  .wizard-dot.active { background: var(--accent); }
+  .wizard-dot.done { background: var(--green); }
+  .wizard-step { display: none; }
+  .wizard-step.active { display: block; }
+  .wizard-step h2 { color: var(--accent); font-size: 1.3rem; margin-bottom: 0.75rem; }
+  .wizard-step p { color: var(--text-dim); font-size: 0.9rem; margin-bottom: 1rem; line-height: 1.6; }
+  .wizard-step .form-section { margin-bottom: 1rem; }
+  .wizard-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1.5rem;
+    gap: 0.75rem;
+  }
+  .wizard-nav .btn-skip {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+  }
+  .wizard-nav .btn-skip:hover { border-color: var(--text-dim); color: var(--text); }
+  .wizard-summary-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.4rem 0;
+    font-size: 0.9rem;
+    border-bottom: 1px solid rgba(71,85,105,0.3);
+  }
+  .wizard-summary-item:last-child { border-bottom: none; }
+  .wizard-check { color: var(--green); }
+  .wizard-skip { color: var(--text-dim); font-style: italic; }
+
+  /* Score type indicator */
+  .score-type-dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--purple);
+    margin-right: 0.3rem;
+    vertical-align: middle;
+  }
+  .score-type-label {
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  /* Info toggle for API key help */
+  .info-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 0.7rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin-left: 0.4rem;
+    vertical-align: middle;
+    line-height: 1;
+  }
+  .info-toggle:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .info-panel {
+    display: none;
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-top: 0.4rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+    line-height: 1.6;
+  }
+  .info-panel.open { display: block; }
+  .info-panel ol { margin: 0.3rem 0 0 1.25rem; color: var(--text-dim); }
+  .info-panel ol li { margin-bottom: 0.2rem; }
+
+  /* Disabled scanner tab */
+  .tab-btn.tab-disabled {
+    opacity: 0.45;
+    position: relative;
+  }
+  .scanner-gate {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    color: var(--text-dim);
+  }
+  .scanner-gate h3 { color: var(--text); margin-bottom: 0.5rem; font-size: 1.1rem; }
+</style>
+</head>
+<body>
+
+<!-- Auth gate -->
+<div id="authGate" style="position:fixed;inset:0;background:var(--bg);z-index:99999;display:flex;align-items:center;justify-content:center;padding:1.5rem">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:2rem 2.25rem;max-width:380px;width:100%;box-shadow:0 6px 32px rgba(0,0,0,0.1)">
+    <h1 style="color:var(--accent);font-size:1.5rem;margin-bottom:0.2rem">Pivot Job Finder</h1>
+    <p style="color:var(--text-dim);font-size:0.9rem;margin-bottom:1.75rem;line-height:1.5">For Pivotal &amp; Tanzu alumni</p>
+    <label style="font-size:0.8rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:0.4rem">Passphrase</label>
+    <input type="password" id="authInput" placeholder="Enter passphrase"
+      style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.55rem 0.8rem;font-size:1rem;color:var(--text);outline:none;margin-bottom:0.5rem"
+      onkeydown="if(event.key==='Enter')checkAuth()">
+    <div id="authError" style="color:var(--red);font-size:0.82rem;margin-bottom:0.75rem;display:none">Incorrect passphrase. Try again.</div>
+    <button onclick="checkAuth()" style="width:100%;padding:0.65rem;font-size:0.95rem">Enter</button>
+  </div>
+</div>
+<script>if(localStorage.getItem('pjf_auth')==='1')document.getElementById('authGate').style.display='none';</script>
+
+<h1>Pivot Job Finder</h1>
+<p class="subtitle">Find and evaluate job postings at companies where Pivotal alumni can refer you — scored with AI evaluation.</p>
+
+<!-- ============================================================ -->
+<!-- SETUP WIZARD MODAL -->
+<!-- ============================================================ -->
+<div class="wizard-overlay hidden" id="setupWizard">
+  <div class="wizard-card">
+    <div class="wizard-progress" id="wizardProgress"></div>
+
+    <!-- Step 0: Welcome -->
+    <div class="wizard-step active" data-step="0">
+      <h2>Welcome, Pivot!</h2>
+      <p class="wizard-subtitle">Find open roles at companies where Pivotal alumni can refer you, score them against your resume, and get connected to the right people.</p>
+      <p>This is a job search tool built on top of the <a href="https://docs.google.com/spreadsheets/d/1fhkgcnVSpg19dfALrWN6hB4kpKRiPrAMCAHacM6_KXw/edit?gid=1217674786#gid=1217674786" target="_blank">Pivot job hunting resources spreadsheet</a>. It is a BYO API app, which means if you want to use certain features you need to supply your own API keys (we'll tell you how later). However, you can use some features even without those.</p>
+      <p>Let's get you set up. We'll start with your resume, then set your job preferences, and optionally add API keys for scanning and AI scoring.</p>
+      <div class="wizard-nav">
+        <button class="btn-skip" onclick="wizardFinish()">Skip setup</button>
+        <button onclick="wizardNext()">Next</button>
+      </div>
+    </div>
+
+    <!-- Step 1: Resume -->
+    <div class="wizard-step" data-step="1">
+      <h2>Paste your resume</h2>
+      <p>Your resume is used to score how well your background matches each job description. Plain text works best.</p>
+      <div class="form-section">
+        <textarea id="wizardResume" placeholder="Paste your resume text here (plain text)..." style="min-height:180px"></textarea>
+        <div class="file-upload-row" style="margin-top:0.5rem">
+          <button class="btn-small btn-secondary" onclick="document.getElementById('wizardResumeFile').click()">Upload .txt file</button>
+          <input type="file" id="wizardResumeFile" accept=".txt,.text" onchange="handleWizardResumeUpload(event)" style="display:none">
+          <span class="file-status" id="wizardFileStatus"></span>
+        </div>
+      </div>
+      <div class="wizard-nav">
+        <button class="btn-secondary" onclick="wizardBack()">Back</button>
+        <div style="display:flex;gap:0.5rem">
+          <button class="btn-skip" onclick="wizardNext()" title="Scoring will be less accurate without a resume">Skip</button>
+          <button onclick="wizardNext()">Next</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Search Criteria -->
+    <div class="wizard-step" data-step="2">
+      <h2>Search Criteria</h2>
+      <p>Tell us what kind of roles you're looking for and where.</p>
+      <div class="form-section">
+        <div class="control-row" style="margin-bottom:0.6rem">
+          <label>Functional area:</label>
+          <select id="wizardFunctionalAreaPreset" onchange="onFunctionalAreaChange('wizard')" style="padding:0.4rem 0.5rem;border-radius:6px;border:1px solid var(--border);background:var(--surface2);font-size:0.85rem">
+            <option value="engineer">Engineering</option>
+            <option value="product manager">Product Management</option>
+            <option value="designer">Design</option>
+            <option value="data scientist">Data Science</option>
+            <option value="other">Other...</option>
+          </select>
+          <input type="text" id="wizardFunctionalAreaCustom" placeholder="e.g. finance, marketing, sales..." style="display:none;flex:1">
+        </div>
+        <div class="form-hint" style="margin-bottom:0.75rem">Used as the search query — e.g. "product manager" finds PM-type roles at each company. Keep it broad.</div>
+        <div class="control-row" style="margin-bottom:0.5rem;align-items:flex-start">
+          <label style="padding-top:0.4rem">Limit my search to specific job titles:</label>
+          <div style="flex:2;display:flex;gap:0.5rem;align-items:flex-start">
+            <div class="preset-wrapper">
+              <button class="btn-small btn-secondary" onclick="toggleTitleSuggestions('wizard')">Suggestions ▾</button>
+              <div class="preset-dropdown" id="wizardTitleSuggestionsDropdown"></div>
+            </div>
+            <div class="tag-container" id="wizardTitleChipsContainer" onclick="document.getElementById('wizardTitleChipInput').focus()" style="flex:1;cursor:text">
+              <input type="text" class="tag-input" id="wizardTitleChipInput" placeholder="Or type a title and press Enter..." onkeydown="if(event.key==='Enter'){addWizardTitleChip();event.preventDefault();}">
+            </div>
+          </div>
+        </div>
+        <div class="form-hint" style="margin-bottom:0.75rem">Or leave blank to cast a wide search. You can adjust this anytime in the results table.</div>
+        <div class="control-row">
+          <label for="wizardLocation">Location:</label>
+          <input type="text" id="wizardLocation" placeholder="e.g. San Francisco, CA" style="flex:2">
+          <select id="wizardRemoteFilter" style="padding:0.4rem 0.5rem;border-radius:6px;border:1px solid var(--border);background:var(--surface2);font-size:0.85rem;min-width:auto">
+            <option value="no-remote">On-site / hybrid only</option>
+            <option value="all">On-site / hybrid or remote</option>
+            <option value="only">Remote only</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-section">
+        <div class="form-section-title">Target Compensation (optional)</div>
+        <div class="form-hint" style="margin-bottom:0.4rem">If a posting mentions salary, it'll be compared against your range.</div>
+        <div class="control-row">
+          <label for="wizardCompMin" style="min-width:auto">Min ($):</label>
+          <input type="number" id="wizardCompMin" placeholder="e.g. 150000" style="min-width:120px;max-width:180px">
+          <label for="wizardCompMax" style="min-width:auto">Max ($):</label>
+          <input type="number" id="wizardCompMax" placeholder="e.g. 250000" style="min-width:120px;max-width:180px">
+        </div>
+      </div>
+      <div class="wizard-nav">
+        <button class="btn-secondary" onclick="wizardBack()">Back</button>
+        <button onclick="wizardNext()">Next</button>
+      </div>
+    </div>
+
+    <!-- Step 4: API Key Transition -->
+    <div class="wizard-step" data-step="3">
+      <h2>Your preferences are saved!</h2>
+      <p>You're ready to start evaluating individual job postings right now — just paste any job description into the <strong>Evaluate a Posting</strong> tab.</p>
+      <p>To unlock the full feature set, you'll need two free API keys:</p>
+      <div style="background:var(--surface2);border-radius:8px;padding:0.85rem 1rem;margin-bottom:0.75rem;display:flex;flex-direction:column;gap:0.5rem">
+        <div><strong>JSearch</strong> — scans Pivot-connected companies for open roles automatically</div>
+        <div><strong>Anthropic</strong> — scores each job against your resume using Claude AI</div>
+      </div>
+      <p style="font-size:0.875rem;color:var(--text-dim)">Both have free tiers and take about 5 minutes to set up. You can also skip this and add them later in the <strong style="color:var(--text)">Setup</strong> tab.</p>
+      <div class="wizard-nav">
+        <button class="btn-secondary" onclick="wizardBack()">Back</button>
+        <div style="display:flex;gap:0.5rem">
+          <button class="btn-skip" onclick="wizardFinish()">Skip for now</button>
+          <button onclick="wizardNext()">Set up API keys</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 5: JSearch (RapidAPI) Key -->
+    <div class="wizard-step" data-step="4">
+      <h2>JSearch API Key</h2>
+      <p>Required to scan for open roles at Pivot-connected companies. Without it, you can still evaluate individual postings manually in the Evaluate tab.</p>
+
+      <div style="background:var(--surface2);border-radius:8px;padding:0.85rem 1rem;margin-bottom:0.75rem">
+        <div style="font-weight:600;margin-bottom:0.3rem">How to get your JSearch key:</div>
+        <ul style="margin:0 0 0.4rem 1.25rem;font-size:0.85rem;color:var(--text-dim);line-height:1.6">
+          <li>Go to <a href="https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch" target="_blank" style="color:var(--accent)">rapidapi.com/jsearch</a></li>
+          <li>Sign up (free), then subscribe to the <strong style="color:var(--text)">free tier</strong></li>
+          <li>Copy your API key from the "X-RapidAPI-Key" header in the playground</li>
+        </ul>
+        <div style="font-size:0.8rem;color:var(--text-dim)">The free tier gives 500 requests/month — enough to scan 100+ companies.</div>
+      </div>
+
+      <div class="form-section">
+        <div class="control-row">
+          <input type="password" id="wizardRapidAPIKey" placeholder="Paste your RapidAPI (JSearch) key here...">
+          <button class="btn-small btn-secondary" onclick="toggleKeyVisibility('wizardRapidAPIKey', this)" style="min-width:auto;padding:0.4rem 0.6rem">Show</button>
+        </div>
+      </div>
+      <div class="wizard-nav">
+        <button class="btn-secondary" onclick="wizardBack()">Back</button>
+        <div style="display:flex;gap:0.5rem">
+          <button class="btn-skip" onclick="wizardNext()">Skip</button>
+          <button onclick="wizardNext()">Next</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 6: Anthropic Key -->
+    <div class="wizard-step" data-step="5">
+      <h2>Anthropic API Key</h2>
+      <p>Powers AI-based job scoring using Claude. Without it, scoring uses keyword matching only — still useful, but less nuanced.</p>
+
+      <div style="background:var(--surface2);border-radius:8px;padding:0.85rem 1rem;margin-bottom:0.75rem">
+        <div style="font-weight:600;margin-bottom:0.3rem">How to get your Anthropic key:</div>
+        <ul style="margin:0 0 0.4rem 1.25rem;font-size:0.85rem;color:var(--text-dim);line-height:1.6">
+          <li>Go to <a href="https://console.anthropic.com" target="_blank" style="color:var(--accent)">console.anthropic.com</a></li>
+          <li>Sign up, add a payment method, then go to <strong style="color:var(--text)">API Keys</strong></li>
+          <li>Create a new key and copy it</li>
+        </ul>
+        <div style="font-size:0.8rem;color:var(--text-dim)">A full run costs just a few cents.</div>
+      </div>
+
+      <div class="form-section">
+        <div class="control-row">
+          <input type="password" id="wizardAnthropicKey" placeholder="sk-ant-...">
+          <button class="btn-small btn-secondary" onclick="toggleKeyVisibility('wizardAnthropicKey', this)" style="min-width:auto;padding:0.4rem 0.6rem">Show</button>
+        </div>
+      </div>
+      <div class="wizard-nav">
+        <button class="btn-secondary" onclick="wizardBack()">Back</button>
+        <div style="display:flex;gap:0.5rem">
+          <button class="btn-skip" onclick="wizardNext()">Skip</button>
+          <button onclick="wizardNext()">Next</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 7: Done -->
+    <div class="wizard-step" data-step="6">
+      <h2>You're all set!</h2>
+      <p>Here's a summary of what's configured:</p>
+      <div id="wizardSummary" style="margin-bottom:1rem"></div>
+      <p style="font-size:0.85rem">You can change any of these settings later in the Setup tab.</p>
+      <div class="wizard-nav">
+        <button class="btn-secondary" onclick="wizardBack()">Back</button>
+        <button class="btn-green" onclick="wizardFinish()">Start Using the App</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- TAB NAVIGATION -->
+<!-- ============================================================ -->
+<div class="tab-bar">
+  <button class="tab-btn active" id="tabBtnScanner" onclick="switchTab('scanner')">Find Jobs with Pivots</button>
+  <button class="tab-btn" id="tabBtnEvaluate" onclick="switchTab('evaluate')">Evaluate a Posting</button>
+  <button class="tab-btn" id="tabBtnSetup" onclick="switchTab('setup')">Setup</button>
+  <button class="tab-btn" id="tabBtnAbout" onclick="switchTab('about')">About</button>
+</div>
+
+<!-- ============================================================ -->
+<!-- TAB: EVALUATE A POSTING -->
+<!-- ============================================================ -->
+<div id="tabEvaluate" style="display:none">
+  <div class="controls eval-form">
+    <h2>Paste a Job Posting</h2>
+    <div class="form-section">
+      <div class="control-row">
+        <label for="evalCompany">Company name:</label>
+        <input type="text" id="evalCompany" placeholder="(optional) Used to look up contact info from your sheet">
+      </div>
+    </div>
+    <div class="form-section">
+      <div class="control-row">
+        <label for="evalTitle">Job title:</label>
+        <input type="text" id="evalTitle" placeholder="e.g. Senior Product Manager">
+      </div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">Job Description</div>
+      <textarea id="evalJD" style="min-height:200px" placeholder="Paste the full job description here..."></textarea>
+    </div>
+    <button onclick="evaluatePosting()">Evaluate</button>
+  </div>
+
+  <div class="eval-results" id="evalResults">
+    <div class="eval-score-hero" id="evalScoreHero"></div>
+    <div class="detail-grid" id="evalBreakdown"></div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- TAB: COMPANY SCANNER -->
+<!-- ============================================================ -->
+<div id="tabScanner">
+
+<div class="scanner-gate" id="scannerGate">
+  <h3>RapidAPI key required</h3>
+  <p style="margin-bottom:1rem">Scanning for jobs at Pivot-connected companies requires a JSearch API key. Add one in the <a href="#" onclick="switchTab('setup');return false" style="color:var(--accent)">Setup tab</a> to enable this feature.</p>
+  <p style="font-size:0.85rem">You can still evaluate individual postings by pasting them in the Evaluate tab.</p>
+</div>
+
+<div id="scannerContent">
+<!-- ============================================================ -->
+<!-- COMPANY LIST (from Google Sheet) -->
+<!-- ============================================================ -->
+<div class="company-section" id="companySection">
+  <h2>Companies with Pivot Contacts <span class="company-count" id="companyCount">(0 loaded)</span></h2>
+  <div class="company-controls">
+    <span class="load-status" id="loadStatus"></span>
+    <span style="flex:1"></span>
+    <button class="btn-small btn-secondary" id="loadCompaniesBtn" onclick="loadCompanies()" style="font-size:0.8rem;padding:0.25rem 0.6rem">↻ Refresh list</button>
+    <input type="text" class="company-search" id="companySearch" placeholder="Filter companies..." oninput="filterCompanies()">
+    <button class="btn-small btn-secondary" onclick="selectAll()">Select All</button>
+    <button class="btn-small btn-secondary" onclick="selectNone()">Deselect All</button>
+  </div>
+  <div class="company-grid" id="companyGrid">
+    <div class="no-contact">Loading companies...</div>
+  </div>
+  <div id="csvFallback" style="display:none;margin-top:0.75rem">
+    <div class="form-hint" style="margin-bottom:0.4rem">
+      Auto-fetch blocked by CORS. <a href="https://docs.google.com/spreadsheets/d/1fhkgcnVSpg19dfALrWN6hB4kpKRiPrAMCAHacM6_KXw/export?format=csv&gid=284520974" target="_blank" style="color:var(--accent)">Open CSV in new tab</a>, select all (Ctrl+A), copy, and paste below:
+    </div>
+    <textarea id="csvPasteArea" style="min-height:80px;width:100%;margin-bottom:0.5rem" placeholder="Paste CSV data here..."></textarea>
+    <button class="btn-small btn-green" onclick="loadCompaniesFromPaste()">Load from Pasted CSV</button>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCAN CONTROLS -->
+<!-- ============================================================ -->
+<div class="scan-bar">
+  <div class="control-row">
+    <button id="scanBtn" onclick="startScan()">Search for Jobs</button>
+    <button class="btn-secondary" onclick="stopScan()" id="stopBtn" disabled>Stop</button>
+    <button class="btn-secondary btn-danger" onclick="clearResults()" id="clearBtn" style="display:none">Clear & start over</button>
+    <button class="btn-secondary" onclick="exportCSV()" id="exportBtn" disabled>Export CSV</button>
+    <button class="btn-secondary" onclick="runLLMEvaluation(true)" id="llmEvalBtn" disabled style="background:rgba(4,131,113,0.08);color:var(--accent);border:1px solid var(--accent)">Re-run LLM Evaluation</button>
+  </div>
+  <div class="progress-container" id="progressContainer">
+    <div class="progress-text" id="progressText">Ready</div>
+    <div class="progress-bar-outer"><div class="progress-bar-inner" id="progressBar"></div></div>
+    <div class="scan-log" id="scanLog"></div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- RESULTS TABLE -->
+<!-- ============================================================ -->
+<div class="results-section" id="resultsSection" style="display:none">
+  <div class="results-header">
+    <h2>Results <span class="result-stats" id="resultStats"></span></h2>
+  </div>
+  <div style="display:flex;gap:1rem;margin-bottom:0.75rem;flex-wrap:wrap">
+    <div style="flex:1;min-width:250px">
+      <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.3rem">
+        <div style="font-size:0.75rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em">Job title</div>
+        <div class="preset-wrapper">
+          <button class="btn-small btn-secondary" onclick="toggleTitleSuggestions('table')">Suggestions ▾</button>
+          <div class="preset-dropdown" id="tableTitleSuggestionsDropdown"></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:0.5rem;align-items:flex-start">
+        <div class="tag-container" id="titleFilterChips" onclick="document.getElementById('titleFilterInput').focus()" style="flex:1;min-height:36px;cursor:text;align-items:center">
+          <input type="text" class="tag-input" id="titleFilterInput" placeholder="Narrow by job title — type and press Enter..." onkeydown="if(event.key==='Enter'){addTitleChip();event.preventDefault();}">
+        </div>
+        <button class="btn-small btn-secondary" onclick="clearTitleFilter()">Clear</button>
+      </div>
+    </div>
+    <div style="flex:1;min-width:250px">
+      <div style="font-size:0.75rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.3rem">Keyword search</div>
+      <div style="display:flex;gap:0.5rem;align-items:center">
+        <div style="flex:1;display:flex;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:0 0.7rem;gap:0.4rem">
+          <span style="color:var(--text-dim);font-size:0.9rem">🔍</span>
+          <input type="text" id="keywordFilter" placeholder="e.g. AWS, healthcare, New York..." oninput="applyFilters()" style="flex:1;background:none;border:none;padding:0.45rem 0;font-size:0.9rem;color:var(--text);outline:none">
+        </div>
+        <button class="btn-small btn-secondary" onclick="document.getElementById('keywordFilter').value='';applyFilters()">Clear</button>
+      </div>
+      <div style="font-size:0.75rem;color:var(--text-dim);margin-top:0.3rem">Searches title, company, and location. All words must match.</div>
+    </div>
+  </div>
+  <div class="table-wrapper">
+    <table id="resultsTable">
+      <thead>
+        <tr>
+          <th data-col="score" onclick="sortTable('score')">Score <span class="sort-arrow" id="arrow-score"></span></th>
+          <th data-col="company" onclick="sortTable('company')">Company <span class="sort-arrow" id="arrow-company"></span></th>
+          <th>Contact</th>
+          <th data-col="title" onclick="sortTable('title')">Title <span class="sort-arrow" id="arrow-title"></span></th>
+          <th data-col="location" onclick="sortTable('location')">Location <span class="sort-arrow" id="arrow-location"></span></th>
+          <th data-col="remote" onclick="sortTable('remote')">Remote <span class="sort-arrow" id="arrow-remote"></span></th>
+          <th>Details</th>
+        </tr>
+      </thead>
+      <tbody id="resultsBody"></tbody>
+    </table>
+  </div>
+  <div class="error-log" id="errorLog"></div>
+</div>
+
+</div><!-- /scannerContent -->
+</div><!-- /tabScanner -->
+
+<!-- ============================================================ -->
+<!-- TAB: SETUP -->
+<!-- ============================================================ -->
+<div id="tabSetup" style="display:none">
+  <div class="controls">
+    <h2>Setup & Preferences</h2>
+
+    <!-- Resume -->
+    <div class="form-section">
+      <div class="form-section-title">Your Resume</div>
+      <textarea id="resumeText" placeholder="Paste your resume text here (plain text). This will be used to score how well your background matches each job description..."></textarea>
+      <div class="file-upload-row">
+        <button class="btn-small btn-secondary" onclick="document.getElementById('resumeFile').click()">Upload .txt file</button>
+        <input type="file" id="resumeFile" accept=".txt,.text" onchange="handleResumeUpload(event)">
+        <span class="file-status" id="fileStatus"></span>
+      </div>
+    </div>
+
+    <!-- Search Criteria -->
+    <div class="form-section">
+      <div class="form-section-title">Search Criteria</div>
+      <div class="control-row" style="margin-bottom:0.5rem">
+        <label>Functional area:</label>
+        <select id="functionalAreaPreset" onchange="onFunctionalAreaChange('')" style="padding:0.4rem 0.5rem;border-radius:6px;border:1px solid var(--border);background:var(--surface2);font-size:0.85rem">
+          <option value="engineer">Engineering</option>
+          <option value="product manager">Product Management</option>
+          <option value="designer">Design</option>
+          <option value="data scientist">Data Science</option>
+          <option value="other">Other...</option>
+        </select>
+        <input type="text" id="functionalAreaCustom" placeholder="e.g. finance, marketing, sales..." style="display:none;flex:1">
+      </div>
+      <div class="form-hint" style="margin-bottom:0.75rem">Used as the search query — e.g. "product manager" finds PM-type roles at each company.</div>
+      <div class="control-row" style="margin-bottom:0.5rem;align-items:flex-start">
+        <label style="padding-top:0.4rem">Limit my search to specific job titles:</label>
+        <div style="flex:2;display:flex;gap:0.5rem;align-items:flex-start">
+          <div class="preset-wrapper">
+            <button class="btn-small btn-secondary" onclick="toggleTitleSuggestions('setup')">Suggestions ▾</button>
+            <div class="preset-dropdown" id="setupTitleSuggestionsDropdown"></div>
+          </div>
+          <div class="tag-container" id="defaultTitleChipsContainer" onclick="document.getElementById('defaultTitleChipInput').focus()" style="flex:1;cursor:text">
+            <input type="text" class="tag-input" id="defaultTitleChipInput" placeholder="Or type a title and press Enter..." onkeydown="if(event.key==='Enter'){addDefaultTitleChip();event.preventDefault();}">
+          </div>
+        </div>
+      </div>
+      <div class="form-hint">Or leave blank to cast a wide search. These pre-populate the title filter in the results table — you can adjust them there without affecting your setup.</div>
+    </div>
+
+    <!-- Location & Remote -->
+    <div class="form-section">
+      <div class="form-section-title">Location</div>
+      <div class="control-row">
+        <label for="locationInput">Preferred location:</label>
+        <input type="text" id="locationInput" placeholder="e.g. San Francisco, CA or Texas or New York City" style="flex:2">
+        <select id="remoteFilter" style="padding:0.4rem 0.5rem;border-radius:6px;border:1px solid var(--border);background:var(--surface2);font-size:0.85rem;min-width:auto">
+          <option value="no-remote">On-site / hybrid only</option>
+          <option value="all">On-site / hybrid or remote</option>
+          <option value="only">Remote only</option>
+        </select>
+      </div>
+      <div class="form-hint">Location narrows search results. "Location + remote" includes remote jobs alongside local results. "Remote only" filters to remote positions.</div>
+    </div>
+
+    <!-- Target Comp -->
+    <div class="form-section">
+      <div class="form-section-title">Target Compensation (optional)</div>
+      <div class="control-row">
+        <label for="compMin">Min Salary ($):</label>
+        <input type="number" id="compMin" placeholder="e.g. 150000" style="min-width:120px;max-width:180px">
+        <label for="compMax" style="min-width:auto">Max ($):</label>
+        <input type="number" id="compMax" placeholder="e.g. 250000" style="min-width:120px;max-width:180px">
+      </div>
+    </div>
+
+    <!-- API Keys -->
+    <div class="form-section">
+      <div class="form-section-title">API Keys</div>
+      <div class="control-row">
+        <label for="apiKey">RapidAPI Key: <span class="info-toggle" onclick="toggleInfo('rapidApiInfo')" title="How to get this key">?</span></label>
+        <input type="password" id="apiKey" placeholder="Paste your RapidAPI (JSearch) key here...">
+        <button class="btn-small btn-secondary" onclick="toggleKeyVisibility('apiKey', this)" style="min-width:auto;padding:0.4rem 0.6rem">Show</button>
+      </div>
+      <div class="form-hint">Required for scanning jobs at Pivot-connected companies.</div>
+      <div class="info-panel" id="rapidApiInfo">
+        <strong>How to get a JSearch API key:</strong>
+        <ol>
+          <li>Go to <a href="https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch" target="_blank" style="color:var(--accent)">rapidapi.com/jsearch</a></li>
+          <li>Sign up (free), then subscribe to the <strong>free tier</strong></li>
+          <li>Copy your API key from the "X-RapidAPI-Key" header in the playground</li>
+        </ol>
+        <div style="margin-top:0.3rem;font-size:0.8rem;color:var(--text-dim)">The free tier gives 500 requests/month — enough to search 100 companies for 5 roles.</div>
+      </div>
+
+      <div class="control-row" style="margin-top:0.5rem">
+        <label for="anthropicKey">Anthropic API Key: <span class="info-toggle" onclick="toggleInfo('anthropicInfo')" title="How to get this key">?</span></label>
+        <input type="password" id="anthropicKey" placeholder="sk-ant-...">
+        <button class="btn-small btn-secondary" onclick="toggleKeyVisibility('anthropicKey', this)" style="min-width:auto;padding:0.4rem 0.6rem">Show</button>
+      </div>
+      <div class="form-hint">Powers LLM evaluation. Without this, scoring falls back to keyword matching.</div>
+      <div class="info-panel" id="anthropicInfo">
+        <strong>How to get an Anthropic API key:</strong>
+        <ol>
+          <li>Go to <a href="https://console.anthropic.com" target="_blank" style="color:var(--accent)">console.anthropic.com</a></li>
+          <li>Sign up, add a payment method, then go to <strong>API Keys</strong></li>
+          <li>Create a new key and copy it</li>
+        </ol>
+        <div style="margin-top:0.3rem;font-size:0.8rem;color:var(--text-dim)">A full run costs just a few cents.</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:0.75rem;margin-top:0.75rem;align-items:center">
+      <button class="btn-green" onclick="saveSettings()">Save Settings</button>
+      <button class="btn-secondary" onclick="showWizard()">Re-run Setup Wizard</button>
+    </div>
+  </div>
+</div><!-- /tabSetup -->
+
+<div id="tabAbout" style="display:none">
+  <div style="max-width:640px;margin:2rem auto;display:flex;flex-direction:column;gap:1.5rem">
+
+    <div class="controls">
+      <h2 style="color:var(--accent);font-size:1.2rem;margin-bottom:0.75rem">Pivot Job Finder</h2>
+      <p style="color:var(--text-dim);font-size:0.95rem;line-height:1.7">
+        This app runs on top of the
+        <a href="https://docs.google.com/spreadsheets/d/1fhkgcnVSpg19dfALrWN6hB4kpKRiPrAMCAHacM6_KXw/edit?gid=1217674786#gid=1217674786" target="_blank">Pivot job hunting resources spreadsheet</a>.
+        As with the spreadsheet, please share it with any ex-Pivotal and Tanzu employees.
+      </p>
+    </div>
+
+    <div class="controls">
+      <h2 style="color:var(--accent);font-size:1.2rem;margin-bottom:0.75rem">Open Source</h2>
+      <p style="color:var(--text-dim);font-size:0.95rem;line-height:1.7">
+        This is an open source project — please feel free to copy and customize it for your own community or use case.
+      </p>
+    </div>
+
+    <div class="controls">
+      <h2 style="color:var(--accent);font-size:1.2rem;margin-bottom:0.75rem">Made by</h2>
+      <p style="color:var(--text-dim);font-size:0.95rem;line-height:1.7">
+        Vibe-coded by <strong style="color:var(--text)">Amanda White</strong>.<br>
+        You can reach me on the Pivotal alumni Slack for feedback or thoughts to share.
+      </p>
+    </div>
+
+    <div style="text-align:center;padding:1.5rem;color:var(--text-dim);font-size:0.95rem;font-style:italic;border-top:1px solid var(--border)">
+      Do what's right, do what works, always be kind.
+    </div>
+
+  </div>
+</div><!-- /tabAbout -->
+
+<div class="saved-indicator" id="savedIndicator">Settings saved</div>
+
+<script>
+// ============================================================
+// CONSTANTS
+// ============================================================
+const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1fhkgcnVSpg19dfALrWN6hB4kpKRiPrAMCAHacM6_KXw/export?format=csv&gid=284520974';
+const CORS_PROXIES = [
+  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+];
+const STORAGE_KEY = 'genericJobScanner_LLM_settings';
+
+// Stopwords to exclude from resume keyword extraction
+const STOPWORDS = new Set([
+  // Determiners, pronouns, prepositions, conjunctions
+  'a','an','the','and','or','but','in','on','at','to','for','of','with','by',
+  'from','is','are','was','were','be','been','being','have','has','had','do',
+  'does','did','will','would','shall','should','may','might','can','could',
+  'this','that','these','those','i','me','my','we','our','us','you','your',
+  'he','she','it','they','them','their','its','am','not','no','so','if',
+  'then','than','too','very','just','about','above','after','again','all',
+  'also','any','as','because','before','between','both','each','few','more',
+  'most','other','over','own','same','some','such','through','under','until',
+  'up','what','when','where','which','while','who','whom','why','how','into',
+  'during','out','off','once','only','down','here','there','further',
+  'across','within','along','around','among','per','via','etc','e.g','upon',
+  // Common generic verbs
+  'work','worked','working','including','using','used','use','new','well',
+  'make','makes','making','made','take','takes','taking','taken','took',
+  'get','gets','getting','got','give','gives','giving','given','gave',
+  'go','goes','going','gone','went','come','comes','coming','came',
+  'see','sees','seeing','seen','saw','know','knows','knowing','known','knew',
+  'think','thinks','thinking','thought','find','finds','finding','found',
+  'want','wants','wanted','need','needs','needed','put','puts','putting',
+  'say','says','said','tell','tells','telling','told','ask','asks','asked',
+  'try','tries','trying','tried','leave','left','call','calls','called',
+  'keep','keeps','keeping','kept','let','lets','run','runs','running',
+  'move','moves','moving','moved','live','lives','living','turn','turns',
+  'start','starts','started','starting','show','shows','showing','shown',
+  'hear','help','helps','helping','helped','talk','set','sets','setting',
+  'read','bring','brings','bringing','brought','begin','begins','began',
+  'hold','holds','holding','held','stand','stands','follow','follows',
+  'lead','leads','leading','led','learn','learns','learning','learned',
+  'build','builds','building','built','grow','grows','growing','grown','grew',
+  'open','opens','opened','opening','write','writes','writing','written',
+  'provide','provides','providing','provided','sit','become','becomes',
+  'send','sends','sent','expect','expects','expected','pay','pays','paid',
+  'happen','allow','allows','serve','serves','served','appear','die',
+  'plan','plans','planned','planning','meet','meets','meeting',
+  'include','includes','included','play','plays','close','add','adds',
+  'continue','continues','continued','change','changes','changed',
+  'watch','point','act','acts','form','forms',
+  // Generic work/job terms
+  'experience','experienced','responsibilities','responsible','ability',
+  'strong','excellent','proven','ensure','ensuring','develop','developed',
+  'developing','manage','managed','managing','create','created','creating',
+  'team','teams','company','role','position','job','year','years','day',
+  'days','time','knowledge','understanding','skills','skill','required',
+  'preferred','requirements','qualifications','minimum','must','plus',
+  'like','based','support','supporting','supported','deliver','delivering',
+  'delivered','drive','drives','driving','driven','identify','identified',
+  'implement','implementing','implemented','collaborate','collaborating',
+  'communicate','communicating','define','defining','defined','maintain',
+  'maintaining','review','reviewing','evaluate','evaluating','contribute',
+  'contributing','partner','partnering','engage','engaging',
+  // Generic adjectives & adverbs
+  'best','good','great','better','high','highly','low','big','small',
+  'large','long','short','right','real','sure','early','late','fast',
+  'hard','clear','full','whole','key','top','able','likely','important',
+  'significant','different','specific','available','possible','necessary',
+  'certain','true','free','next','last','first','second','third',
+  'every','several','many','much','less','least','often','always',
+  'never','still','already','even','enough','yet','especially',
+  'currently','directly','quickly','easily','effectively','successfully',
+  'typically','generally','particularly','specifically','primarily',
+  // Generic nouns
+  'way','ways','thing','things','part','parts','place','number',
+  'area','areas','group','groups','world','line','end','range',
+  'type','types','level','levels','kind','head','hand','hands',
+  'list','form','case','cases','system','systems','program','programs',
+  'question','information','result','results','member','members',
+  'process','processes','service','services','business','order',
+  'people','person','woman','man','child','side','issue','issues',
+  'power','fact','matter','piece',
+]);
+
+// Additional stopwords for JD gap analysis — common JD boilerplate that isn't useful as a "gap"
+const JD_STOPWORDS = new Set([
+  ...STOPWORDS,
+  // Job posting boilerplate
+  'candidate','candidates','apply','application','applicant','applicants',
+  'resume','cover','letter','submit','submitted','hiring','hire','hired',
+  'employer','employment','employee','employees','position','positions',
+  'opportunity','opportunities','openings','opening','posting','posted',
+  'deadline','salary','compensation','benefits','bonus','equity','stock',
+  'insurance','dental','vision','medical','health','401k','pto','vacation',
+  'paid','leave','holiday','holidays','flexible','perks','wellness',
+  // Generic JD filler
+  'list','listed','looking','seeking','ideal','passionate','excited',
+  'join','joining','offer','offers','offering','provided','providing',
+  'provide','includes','include','included','level','levels',
+  'description','overview','summary','title','report','reporting',
+  'reports','directly','full-time','part-time','onsite','hybrid','remote',
+  'location','office','headquartered','headquarters','worldwide','global',
+  // Process/legal
+  'equal','diversity','diverse','inclusion','inclusive','accommodation',
+  'accommodations','disability','disabilities','protected','veteran',
+  'veterans','status','race','color','religion','gender','sex','sexual',
+  'orientation','national','origin','age','genetic','citizenship',
+  'authorize','authorized','authorization','background','check','drug',
+  'screening','eeo','affirmative','action','comply','compliance',
+  // Generic action words already in base stopwords but adding more
+  'support','supporting','supported','help','helping','identify',
+  'identified','identifying','drive','driving','driven','lead','leading',
+  'build','building','built','deliver','delivering','delivered',
+  'define','defining','defined','implement','implementing','implemented',
+  'collaborate','collaborating','collaboration','communicate',
+  'communicating','communication','partner','partnering','engage',
+  'engaging','engaged','maintain','maintaining','maintained',
+  'evaluate','evaluating','evaluated','review','reviewing','reviewed',
+  'contribute','contributing','demonstrated','demonstrating',
+  // Vague qualifiers
+  'ability','able','related','relevant','equivalent','similar',
+  'appropriate','various','multiple','several','key','core','critical',
+  'essential','important','significant','significant','high','highly',
+  'deep','broad','solid','sound','good','great','best','top',
+  'world-class','fast-paced','dynamic','innovative','cutting-edge',
+  'mission','mission-driven','growth','growing','scale','scaling',
+  // Common but unhelpful nouns
+  'way','ways','thing','things','area','areas','part','parts',
+  'range','set','sets','group','groups','type','types','form','forms',
+  'information','data','process','processes','system','systems',
+  'service','services','solution','solutions','result','results',
+  'business','organization','organizations','stakeholder','stakeholders',
+  'customer','customers','client','clients','user','users','member','members',
+  'industry','market','function','functions','practice','practices',
+  // Short generic words that slip through
+  'us','we','our','make','makes','making','made','pay','take','takes',
+  'taking','get','gets','getting','got','give','gives','giving','given',
+  'see','seen','come','comes','coming','came','go','goes','going','gone',
+  'put','run','runs','running','keep','keeps','keeping','kept','let',
+  'say','says','said','tell','ask','asked','need','needs','needed',
+  'want','wants','wanted','show','shows','showing','try','move','call',
+  'live','lives','living','turn','start','starts','play','hand','hands',
+  'plan','plans','world','still','find','finds','finding','found',
+  'place','stand','own','end','point','change','changes','follow',
+  'act','acts','read','long','look','looks','add','learn','head',
+  'line','open','seem','next','last','may','also','meet','year',
+  'note','notes','order','believe','become','due','please','upon',
+  'allow','allows','allowed','expect','expected','will','within',
+  // More generic job description filler
+  'role','roles','responsible','responsibilities','ensure','ensuring',
+  'across','track','record','success','successful','successfully',
+  'focus','focused','focusing','based','bases','basis',
+  'strong','excellent','great','good','best','well','better',
+  'right','real','sure','early','young','old','big','small','large',
+  'first','second','third','much','many','often','less','least',
+  'every','another','able','possible','available','current','currently',
+  'day','days','week','weekly','month','monthly','annual','annually',
+  'today','future','existing','ongoing','potential','overall',
+]);
+
+// ============================================================
+// STATE
+// ============================================================
+let companies = [];        // [{company, contact, location, region, hiring, notes, date}]
+let companiesMap = {};     // lowercase company name -> company obj
+let mustHaves = [];        // user-configured must-have keywords
+let resumeText = '';       // user's pasted resume
+let resumeKeywords = [];   // extracted keywords from resume
+function checkAuth() {
+  if (document.getElementById('authInput').value === 'alwaysbekind') {
+    localStorage.setItem('pjf_auth', '1');
+    document.getElementById('authGate').style.display = 'none';
+  } else {
+    document.getElementById('authError').style.display = '';
+    document.getElementById('authInput').value = '';
+    document.getElementById('authInput').focus();
+  }
+}
+
+let allResults = [];
+let scannedCompanies = new Set(); // lowercase company names that have been scanned
+let titleFilterChips = [];
+let defaultTitleChips = [];
+let wizardTitleChips = [];
+let scanning = false;
+let abortController = null;
+let currentSort = { col: 'score', dir: 'desc' };
+let wizardStep = 0;
+const WIZARD_STEPS = 7;
+
+// ============================================================
+// INIT
+// ============================================================
+(function init() {
+  loadSettings();
+  loadCompanies();
+
+  // First-time setup: if no saved settings exist, show wizard
+  const savedRaw = localStorage.getItem(STORAGE_KEY);
+  const hasCompletedSetup = savedRaw && JSON.parse(savedRaw)._wizardCompleted;
+  if (!hasCompletedSetup) {
+    showWizard();
+  }
+
+  updateScannerTabState();
+
+  // Default tab: Scanner if RapidAPI key exists, otherwise Evaluate
+  const initRapidKey = document.getElementById('apiKey').value.trim();
+  if (!initRapidKey) {
+    switchTab('evaluate');
+  }
+
+  // Auto-load cached scan results if they exist
+  try {
+    const cached = JSON.parse(localStorage.getItem(STORAGE_KEY + '_lastResults'));
+    if (cached && cached.results && cached.results.length > 0) {
+      allResults = cached.results;
+      if (cached.scannedCompanies) scannedCompanies = new Set(cached.scannedCompanies);
+      // Re-score with current settings
+      resumeText = document.getElementById('resumeText').value;
+      resumeKeywords = extractResumeKeywords(resumeText);
+      const cachedAnthropicKey = document.getElementById('anthropicKey').value.trim();
+      const cachedSkipKW = cachedAnthropicKey.length > 0;
+      if (resumeKeywords.length > 0) {
+        for (const r of allResults) {
+          // If LLM key present and LLM scores exist, skip keyword re-scoring as primary
+          if (cachedSkipKW && r.llmEvaluation) {
+            r.score = r.llmEvaluation.score;
+            // Backfill keyword data if missing
+            if (!r.evaluation) {
+              r.evaluation = evaluateResumeFit(r.description || '', r.title);
+              r.keywordScore = r.evaluation.score;
+            }
+          } else {
+            r.evaluation = evaluateResumeFit(r.description || '', r.title);
+            r.keywordScore = r.evaluation.score;
+            r.score = r.llmEvaluation ? r.llmEvaluation.score : r.evaluation.score;
+          }
+        }
+      }
+      allResults.sort((a, b) => b.score - a.score);
+      document.getElementById('resultsSection').style.display = '';
+      renderResults();
+      document.getElementById('exportBtn').disabled = false;
+      updateLLMButtonState();
+      updateCompanyGridScannedState();
+
+      const age = Date.now() - cached.timestamp;
+      const mins = Math.round(age / 60000);
+      const timeAgo = mins < 60 ? `${mins}m ago` : `${Math.round(mins / 60)}h ago`;
+      document.getElementById('progressContainer').classList.add('visible');
+      document.getElementById('scanBtn').textContent = 'Search for Jobs';
+      document.getElementById('progressText').textContent = `Showing ${allResults.length} cached results (last scanned ${timeAgo}). Select companies and click "Search for Jobs" to re-scan.`;
+      document.getElementById('progressBar').style.width = '100%';
+    }
+  } catch (e) {}
+})();
+
+// ============================================================
+// SETTINGS PERSISTENCE (localStorage)
+// ============================================================
+function loadSettings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (!saved) {
+      return;
+    }
+    if (saved.apiKey) document.getElementById('apiKey').value = saved.apiKey;
+    if (saved.anthropicKey) document.getElementById('anthropicKey').value = saved.anthropicKey;
+    if (saved.resumeText) {
+      document.getElementById('resumeText').value = saved.resumeText;
+      resumeText = saved.resumeText;
+      resumeKeywords = extractResumeKeywords(resumeText);
+    }
+    mustHaves = saved.mustHaves || [];
+    if (saved.functionalAreaPreset) {
+      document.getElementById('functionalAreaPreset').value = saved.functionalAreaPreset;
+      onFunctionalAreaChange('');
+    }
+    if (saved.functionalAreaCustom) document.getElementById('functionalAreaCustom').value = saved.functionalAreaCustom;
+    if (saved.defaultTitleFilter) {
+      defaultTitleChips = saved.defaultTitleFilter.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+      renderDefaultTitleChips();
+      setTitleFilterFromDefault();
+    }
+    if (saved.location) document.getElementById('locationInput').value = saved.location;
+    if (saved.remoteFilter) document.getElementById('remoteFilter').value = saved.remoteFilter;
+    // Migrate old checkbox setting
+    else if (saved.remoteOnly) document.getElementById('remoteFilter').value = 'only';
+    if (saved.compMin) document.getElementById('compMin').value = saved.compMin;
+    if (saved.compMax) document.getElementById('compMax').value = saved.compMax;
+
+    renderTags('mustHaveTagContainer', 'mustHaveTagInput', mustHaves);
+
+  } catch (e) {
+  }
+}
+
+function onFunctionalAreaChange(prefix) {
+  const id = prefix ? prefix + 'FunctionalAreaPreset' : 'functionalAreaPreset';
+  const customId = prefix ? prefix + 'FunctionalAreaCustom' : 'functionalAreaCustom';
+  const isOther = document.getElementById(id).value === 'other';
+  document.getElementById(customId).style.display = isOther ? '' : 'none';
+}
+
+function getFunctionalArea(prefix) {
+  const id = prefix ? prefix + 'FunctionalAreaPreset' : 'functionalAreaPreset';
+  const customId = prefix ? prefix + 'FunctionalAreaCustom' : 'functionalAreaCustom';
+  const preset = document.getElementById(id).value;
+  if (preset === 'other') return document.getElementById(customId).value.trim();
+  return preset;
+}
+
+function saveSettings() {
+  resumeText = document.getElementById('resumeText').value;
+  resumeKeywords = extractResumeKeywords(resumeText);
+
+  const settings = {
+    apiKey: document.getElementById('apiKey').value,
+    anthropicKey: document.getElementById('anthropicKey').value,
+    resumeText: resumeText,
+    mustHaves: mustHaves,
+    functionalAreaPreset: document.getElementById('functionalAreaPreset').value,
+    functionalAreaCustom: document.getElementById('functionalAreaCustom').value,
+    defaultTitleFilter: defaultTitleChips.join(', '),
+    location: document.getElementById('locationInput').value,
+    remoteFilter: document.getElementById('remoteFilter').value,
+    compMin: document.getElementById('compMin').value,
+    compMax: document.getElementById('compMax').value,
+    _wizardCompleted: true,
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+
+  // Flash saved indicator
+  const indicator = document.getElementById('savedIndicator');
+  indicator.classList.add('show');
+  setTimeout(() => indicator.classList.remove('show'), 2000);
+
+  updateScannerTabState();
+}
+
+// ============================================================
+// TAG INPUT UI
+// ============================================================
+function renderTags(containerId, inputId, tagsArray) {
+  const container = document.getElementById(containerId);
+  const input = document.getElementById(inputId);
+  // Remove existing tags
+  container.querySelectorAll('.tag').forEach(t => t.remove());
+  // Add tags before input
+  for (let i = 0; i < tagsArray.length; i++) {
+    const tag = document.createElement('span');
+    tag.className = 'tag';
+    tag.innerHTML = `${escapeHtml(tagsArray[i])}<span class="tag-remove" data-idx="${i}">&times;</span>`;
+    container.insertBefore(tag, input);
+  }
+}
+
+function setupTagInput(containerId, inputId, tagsArray, arrayName) {
+  const input = document.getElementById(inputId);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && input.value.trim()) {
+      e.preventDefault();
+      const val = input.value.trim().toLowerCase();
+      if (!tagsArray.includes(val)) {
+        tagsArray.push(val);
+        renderTags(containerId, inputId, tagsArray);
+      }
+      input.value = '';
+    } else if (e.key === 'Backspace' && !input.value && tagsArray.length > 0) {
+      tagsArray.pop();
+      renderTags(containerId, inputId, tagsArray);
+    }
+  });
+
+  document.getElementById(containerId).addEventListener('click', (e) => {
+    if (e.target.classList.contains('tag-remove')) {
+      const idx = parseInt(e.target.dataset.idx);
+      tagsArray.splice(idx, 1);
+      renderTags(containerId, inputId, tagsArray);
+    }
+  });
+}
+
+// Init tag inputs
+
+// ============================================================
+// RESUME FILE UPLOAD
+// ============================================================
+function handleResumeUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const status = document.getElementById('fileStatus');
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    document.getElementById('resumeText').value = e.target.result;
+    status.textContent = `Loaded: ${file.name}`;
+  };
+  reader.onerror = () => { status.textContent = 'Error reading file'; };
+  reader.readAsText(file);
+}
+
+// ============================================================
+// GOOGLE SHEET CSV FETCHING & PARSING
+// ============================================================
+async function loadCompanies() {
+  const btn = document.getElementById('loadCompaniesBtn');
+  const status = document.getElementById('loadStatus');
+  btn.disabled = true;
+  status.className = 'load-status';
+  status.textContent = 'Fetching company list...';
+
+  let csvText = null;
+  let lastErr = null;
+
+  // Try direct fetch first (works if served from a web server with CORS)
+  try {
+    const resp = await fetch(SHEET_CSV_URL);
+    if (resp.ok) csvText = await resp.text();
+  } catch (e) { lastErr = e; }
+
+  // Try CORS proxies as fallbacks
+  if (!csvText) {
+    for (const proxyFn of CORS_PROXIES) {
+      try {
+        status.textContent = 'Trying alternate fetch method...';
+        const proxyUrl = proxyFn(SHEET_CSV_URL);
+        const resp = await fetch(proxyUrl);
+        if (resp.ok) {
+          csvText = await resp.text();
+          break;
+        }
+      } catch (e) { lastErr = e; }
+    }
+  }
+
+  if (!csvText) {
+    status.className = 'load-status error';
+    status.textContent = 'Auto-fetch failed (CORS). Paste CSV below or open the sheet link and copy the data.';
+    document.getElementById('csvFallback').style.display = '';
+    btn.disabled = false;
+    return;
+  }
+
+  finishLoadCompanies(csvText, status);
+  btn.disabled = false;
+}
+
+function loadCompaniesFromPaste() {
+  const csvText = document.getElementById('csvPasteArea').value.trim();
+  if (!csvText) { alert('Please paste the CSV data first.'); return; }
+  const status = document.getElementById('loadStatus');
+  finishLoadCompanies(csvText, status);
+  document.getElementById('csvFallback').style.display = 'none';
+}
+
+function finishLoadCompanies(csvText, status) {
+  companies = parseCSV(csvText);
+  companiesMap = {};
+  for (const c of companies) {
+    companiesMap[c.company.toLowerCase()] = c;
+  }
+  buildCompanyGrid();
+  status.className = 'load-status success';
+  status.textContent = `Loaded ${companies.length} companies`;
+}
+
+function parseCSV(text) {
+  const lines = parseCSVLines(text);
+  if (lines.length < 2) return [];
+
+  // Header row
+  const headers = lines[0].map(h => h.trim().toLowerCase());
+  const colMap = {};
+  headers.forEach((h, i) => { colMap[h] = i; });
+
+  const result = [];
+  for (let i = 1; i < lines.length; i++) {
+    const row = lines[i];
+    const companyName = (row[colMap['company']] || '').trim();
+    if (!companyName) continue; // skip empty rows
+
+    result.push({
+      company: companyName,
+      contactName: (row[colMap['who can introduce you?/best way to contact']] || row[colMap['contact name']] || row[colMap['contact']] || '').trim(),
+      contactInfo: (row[colMap['contact info']] || row[colMap['contact details']] || '').trim(),
+      location: (row[colMap['location']] || '').trim(),
+      region: (row[colMap['region']] || '').trim(),
+      hiring: (row[colMap['hiring notes']] || row[colMap['hiring']] || '').trim(),
+      notes: (row[colMap['pivot-centric notes']] || row[colMap['notes']] || '').trim(),
+      date: (row[colMap['date']] || '').trim(),
+    });
+  }
+  return result;
+}
+
+// RFC 4180-ish CSV parser that handles quoted fields
+function parseCSVLines(text) {
+  const results = [];
+  let row = [];
+  let field = '';
+  let inQuotes = false;
+  let i = 0;
+
+  while (i < text.length) {
+    const ch = text[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (i + 1 < text.length && text[i + 1] === '"') {
+          field += '"';
+          i += 2;
+        } else {
+          inQuotes = false;
+          i++;
+        }
+      } else {
+        field += ch;
+        i++;
+      }
+    } else {
+      if (ch === '"') {
+        inQuotes = true;
+        i++;
+      } else if (ch === ',') {
+        row.push(field);
+        field = '';
+        i++;
+      } else if (ch === '\r' || ch === '\n') {
+        row.push(field);
+        field = '';
+        results.push(row);
+        row = [];
+        if (ch === '\r' && i + 1 < text.length && text[i + 1] === '\n') i++;
+        i++;
+      } else {
+        field += ch;
+        i++;
+      }
+    }
+  }
+  // Last field/row
+  if (field || row.length > 0) {
+    row.push(field);
+    results.push(row);
+  }
+  return results;
+}
+
+// ============================================================
+// SCANNED COMPANY TRACKING
+// ============================================================
+function updateCompanyGridScannedState() {
+  const labels = document.querySelectorAll('#companyGrid label');
+  for (const label of labels) {
+    label.classList.toggle('scanned', scannedCompanies.has(label.dataset.company));
+  }
+}
+
+function clearResults() {
+  allResults = [];
+  scannedCompanies = new Set();
+  updateCompanyGridScannedState();
+  document.getElementById('resultsSection').style.display = 'none';
+  document.getElementById('resultsBody').innerHTML = '';
+  document.getElementById('errorLog').innerHTML = '';
+  document.getElementById('scanLog').innerHTML = '';
+  document.getElementById('progressContainer').classList.remove('visible');
+  document.getElementById('exportBtn').disabled = true;
+  document.getElementById('llmEvalBtn').disabled = true;
+  document.getElementById('clearBtn').style.display = 'none';
+  document.getElementById('scanBtn').textContent = 'Search for Jobs';
+  // Reset title filter chips to defaults
+  setTitleFilterFromDefault();
+  filterResultsByTitle();
+  try { localStorage.removeItem(STORAGE_KEY + '_lastResults'); } catch(e) {}
+}
+
+// ============================================================
+// COMPANY CHECKLIST UI
+// ============================================================
+function buildCompanyGrid() {
+  const grid = document.getElementById('companyGrid');
+  grid.innerHTML = '';
+  const sorted = [...companies].sort((a, b) => a.company.localeCompare(b.company));
+  for (const c of sorted) {
+    const label = document.createElement('label');
+    label.dataset.company = c.company.toLowerCase();
+    label.innerHTML = `<input type="checkbox" value="${escapeHtml(c.company)}"> ${escapeHtml(c.company)}`;
+    label.addEventListener('mouseenter', () => showCompanyPopover(c, label));
+    label.addEventListener('mouseleave', () => { clearTimeout(_popoverTimer); _popoverTimer = setTimeout(hideCompanyPopover, 120); });
+    grid.appendChild(label);
+  }
+  updateCompanyCount();
+  updateCompanyGridScannedState();
+}
+
+let _popoverTimer = null;
+
+function showCompanyPopover(c, anchor) {
+  clearTimeout(_popoverTimer);
+  _popoverTimer = setTimeout(() => {
+    const pop = document.getElementById('companyPopover');
+    let html = `<div class="pop-name">${escapeHtml(c.company)}</div>`;
+    if (c.contactName) html += `<div class="pop-row"><span class="pop-lbl">Contact</span><span>${escapeHtml(c.contactName)}</span></div>`;
+    if (c.contactInfo) html += `<div class="pop-row"><span class="pop-lbl">Info</span><span>${escapeHtml(c.contactInfo)}</span></div>`;
+    if (c.location)    html += `<div class="pop-row"><span class="pop-lbl">Location</span><span>${escapeHtml(c.location)}</span></div>`;
+    if (c.hiring)      html += `<div class="pop-row"><span class="pop-lbl">Hiring</span><span>${escapeHtml(c.hiring)}</span></div>`;
+    if (c.notes)       html += `<div class="pop-row"><span class="pop-lbl">Notes</span><span>${escapeHtml(c.notes)}</span></div>`;
+    if (!c.contactName && !c.contactInfo && !c.location && !c.hiring && !c.notes)
+      html += `<div style="color:var(--text-dim);font-size:0.8rem">No additional info</div>`;
+    pop.innerHTML = html;
+    pop.style.display = 'block';
+
+    const MARGIN = 8;
+    const rect = anchor.getBoundingClientRect();
+    const ph = pop.offsetHeight; // already capped by CSS max-height
+    const pw = pop.offsetWidth;
+    const spaceBelow = window.innerHeight - rect.bottom - MARGIN;
+    const spaceAbove = rect.top - MARGIN;
+
+    let top;
+    if (spaceBelow >= ph || spaceBelow >= spaceAbove) {
+      top = rect.bottom + 6;
+    } else {
+      top = rect.top - ph - 6;
+    }
+    // Clamp so it never goes off-screen
+    top = Math.max(MARGIN, Math.min(top, window.innerHeight - ph - MARGIN));
+
+    let left = rect.left;
+    if (left + pw > window.innerWidth - MARGIN) left = window.innerWidth - pw - MARGIN;
+    if (left < MARGIN) left = MARGIN;
+    pop.style.top = top + 'px';
+    pop.style.left = left + 'px';
+  }, 400);
+}
+
+function hideCompanyPopover() {
+  clearTimeout(_popoverTimer);
+  document.getElementById('companyPopover').style.display = 'none';
+}
+
+function filterCompanies() {
+  const q = document.getElementById('companySearch').value.toLowerCase();
+  const labels = document.querySelectorAll('#companyGrid label');
+  for (const label of labels) {
+    label.classList.toggle('hidden', !label.dataset.company.includes(q));
+  }
+}
+
+function selectAll() {
+  for (const cb of document.querySelectorAll('#companyGrid input[type="checkbox"]')) {
+    if (!cb.closest('label').classList.contains('hidden')) cb.checked = true;
+  }
+  updateCompanyCount();
+}
+
+function selectNone() {
+  for (const cb of document.querySelectorAll('#companyGrid input[type="checkbox"]')) {
+    cb.checked = false;
+  }
+  updateCompanyCount();
+}
+
+function updateCompanyCount() {
+  const checked = document.querySelectorAll('#companyGrid input[type="checkbox"]:checked').length;
+  const total = companies.length;
+  document.getElementById('companyCount').textContent = `(${checked} of ${total} selected)`;
+}
+
+document.getElementById('companyGrid').addEventListener('change', updateCompanyCount);
+
+// ============================================================
+// RESUME KEYWORD EXTRACTION
+// ============================================================
+function extractKeywords(text, stopwords) {
+  if (!text || !text.trim()) return [];
+  const sw = stopwords || STOPWORDS;
+  const normalized = text.toLowerCase()
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[^a-z0-9/#+\-.\s]/g, ' ');
+
+  // Extract individual words
+  const words = normalized.split(/\s+/).filter(w => w.length >= 3 && !sw.has(w));
+
+  // Also extract 2-word and 3-word phrases
+  const rawWords = normalized.split(/\s+/).filter(w => w.length >= 2);
+  const bigrams = [];
+  const trigrams = [];
+  for (let i = 0; i < rawWords.length - 1; i++) {
+    if (!sw.has(rawWords[i]) && !sw.has(rawWords[i + 1])) {
+      bigrams.push(rawWords[i] + ' ' + rawWords[i + 1]);
+    }
+    if (i < rawWords.length - 2) {
+      trigrams.push(rawWords[i] + ' ' + rawWords[i + 1] + ' ' + rawWords[i + 2]);
+    }
+  }
+
+  // Count frequencies - words appearing multiple times are more important
+  const freq = {};
+  for (const w of words) {
+    freq[w] = (freq[w] || 0) + 1;
+  }
+  for (const p of bigrams) {
+    freq[p] = (freq[p] || 0) + 1;
+  }
+
+  // Return unique keywords sorted by frequency (most common first)
+  const unique = Object.entries(freq)
+    .filter(([k, v]) => k.length >= 3)
+    .sort((a, b) => b[1] - a[1])
+    .map(([k]) => k);
+
+  // Limit to top 200 to keep scoring fast
+  return unique.slice(0, 200);
+}
+
+function extractResumeKeywords(text) {
+  return extractKeywords(text, STOPWORDS);
+}
+
+// Skills/tech/domain whitelist for single-word JD gap filtering
+const SKILLS_WHITELIST = new Set([
+  // Programming languages
+  'python','java','javascript','typescript','golang','ruby','rust','scala','kotlin',
+  'swift','php','perl','matlab','lua','haskell','elixir','clojure','dart','groovy',
+  'c++','c#','r','sql','nosql','graphql','html','css','sass','less','bash','shell',
+  'powershell','terraform','solidity','vhdl','verilog','assembly','fortran','cobol',
+  // Frontend frameworks & libraries
+  'react','angular','vue','svelte','nextjs','nuxt','gatsby','redux','mobx','webpack',
+  'vite','tailwind','bootstrap','jquery','ember','backbone','storybook','cypress',
+  // Backend frameworks & runtimes
+  'node','nodejs','express','django','flask','fastapi','spring','rails','laravel',
+  'dotnet','asp.net','gin','fiber','actix','phoenix','sinatra','nestjs','deno','bun',
+  // Databases & data stores
+  'postgres','postgresql','mysql','mongodb','redis','elasticsearch','cassandra',
+  'dynamodb','couchdb','neo4j','influxdb','sqlite','mariadb','oracle','mssql',
+  'snowflake','bigquery','redshift','databricks','clickhouse','druid','pinecone',
+  'supabase','firebase','cockroachdb','planetscale','vitess','memcached',
+  // Cloud & infrastructure
+  'aws','azure','gcp','heroku','vercel','netlify','cloudflare','digitalocean',
+  'docker','kubernetes','k8s','openshift','vagrant','ansible','puppet','chef',
+  'terraform','pulumi','cloudformation','serverless','lambda','fargate','ecs','eks',
+  'ec2','s3','rds','vpc','iam','cdn','nginx','apache','caddy','traefik','istio',
+  'envoy','consul','vault','packer','nomad',
+  // DevOps & CI/CD
+  'devops','cicd','ci/cd','jenkins','github','gitlab','bitbucket','circleci',
+  'travis','argo','argocd','spinnaker','tekton','drone','buildkite','octopus',
+  'grafana','prometheus','datadog','splunk','nagios','pagerduty','opsgenie',
+  'newrelic','dynatrace','kibana','logstash','fluentd','jaeger','zipkin',
+  'opentelemetry','sentry','rollbar',
+  // Data & ML
+  'hadoop','spark','kafka','flink','airflow','dagster','prefect','dbt','fivetran',
+  'looker','tableau','powerbi','metabase','superset','pandas','numpy','scipy',
+  'scikit-learn','tensorflow','pytorch','keras','xgboost','lightgbm','mlflow',
+  'kubeflow','sagemaker','vertex','huggingface','opencv','spacy','nltk',
+  'langchain','llamaindex','rag','llm','llms','gpt','bert','transformer',
+  'transformers','embeddings','vectordb','mlops','etl','elt','datalake',
+  'datawarehouse','olap','oltp','streaming','batch','realtime',
+  // APIs & protocols
+  'api','apis','rest','restful','grpc','soap','websocket','websockets','mqtt',
+  'amqp','rabbitmq','zeromq','kafka','nats','graphql','openapi','swagger',
+  'protobuf','json','xml','yaml','csv','parquet','avro','oauth','jwt','saml',
+  'sso','ldap','oidc','cors','http','https','tcp','udp','dns','ssl','tls',
+  // Testing & quality
+  'jest','mocha','pytest','junit','rspec','selenium','playwright','puppeteer',
+  'testcafe','appium','postman','locust','gatling','jmeter','sonarqube',
+  'coveralls','codecov','tdd','bdd','unittest','integration','e2e','qa','qe',
+  'sdet','regression','loadtesting','chaos',
+  // Mobile
+  'ios','android','react-native','flutter','xamarin','ionic','cordova',
+  'swiftui','jetpack','compose','cocoapods','gradle','xcode',
+  // Design & UX tools
+  'figma','sketch','invision','zeplin','framer','principle','axure','balsamiq',
+  'miro','figjam','adobe','photoshop','illustrator','aftereffects','xd',
+  // Project management & collaboration
+  'jira','confluence','asana','trello','monday','linear','shortcut','notion',
+  'airtable','basecamp','clickup','smartsheet','productboard','aha',
+  // Methodologies
+  'agile','scrum','kanban','lean','waterfall','safe','xp','kaizen','six-sigma',
+  'design-thinking','okr','okrs','kpi','kpis','sprint','sprints','standup',
+  'retrospective','backlog','roadmap','roadmapping','prioritization',
+  // Security
+  'cybersecurity','infosec','soc2','hipaa','gdpr','ccpa','pci','fedramp',
+  'iso27001','nist','owasp','penetration','pentest','vulnerability','siem',
+  'iam','rbac','encryption','zero-trust','devsecops','compliance',
+  // Certifications
+  'pmp','csm','cspo','psm','pmi','togaf','itil','comptia','cissp','cism',
+  'cisa','ceh','ccna','ccnp','cka','ckad','saa','sap','dop',
+  // Domain / industry terms
+  'saas','paas','iaas','b2b','b2c','b2b2c','d2c','fintech','healthtech',
+  'edtech','adtech','martech','proptech','insurtech','regtech','legaltech',
+  'biotech','cleantech','govtech','hrtech','foodtech','agritech',
+  'ecommerce','e-commerce','marketplace','payments','billing','subscriptions',
+  'telemedicine','telehealth','ehr','emr','clinical','pharmaceutical',
+  'logistics','supply-chain','erp','crm','cms','lms','hris',
+  // Architecture & patterns
+  'microservices','monolith','event-driven','cqrs','saga','pub/sub','pubsub',
+  'soa','api-gateway','service-mesh','distributed','scalability','latency',
+  'throughput','caching','sharding','replication','consensus','raft','paxos',
+  'cap','acid','eventual','idempotent','stateless','stateful','serverless',
+  'edge','cdn','multitenancy','multi-tenant',
+  // Analytics & product
+  'analytics','attribution','segmentation','cohort','funnel','retention',
+  'churn','ltv','arpu','arr','mrr','nps','csat','dau','mau','wau',
+  'conversion','optimization','personalization','experimentation',
+  'a/b','multivariate','amplitude','mixpanel','segment','heap','fullstory',
+  'hotjar','googleanalytics','gtm','looker','mode','sigma',
+  // General tech concepts
+  'frontend','backend','fullstack','full-stack','devops','sre','mlops',
+  'dataops','gitops','infrastructure','architecture','platform','embedded',
+  'firmware','iot','blockchain','web3','defi','nft','ar','vr','xr',
+  'metaverse','robotics','autonomous','computer-vision','nlp','llm',
+  'generative','genai','rag','fine-tuning','prompt','prompting',
+  'automation','orchestration','containerization','virtualization',
+  'observability','monitoring','alerting','logging','tracing','profiling',
+  'benchmarking','capacity','reliability','availability','durability',
+  'failover','disaster-recovery','backup','migration',
+]);
+
+function extractJDGaps(jdText) {
+  if (!jdText || !resumeText) return [];
+  const normalized = jdText.toLowerCase()
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[^a-z0-9/#+\-.\s]/g, ' ');
+
+  const words = normalized.split(/\s+/).filter(w => SKILLS_WHITELIST.has(w));
+
+  // Count frequencies and dedupe
+  const freq = {};
+  for (const w of words) { freq[w] = (freq[w] || 0) + 1; }
+
+  // Filter out anything already in resume
+  const resumeLower = normalize(resumeText);
+  return Object.entries(freq)
+    .filter(([kw]) => !resumeLower.includes(kw))
+    .sort((a, b) => b[1] - a[1])
+    .map(([kw]) => kw);
+}
+
+// ============================================================
+// SCORING ENGINE - Resume vs JD keyword overlap
+// ============================================================
+function normalize(text) {
+  return text.toLowerCase().replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"');
+}
+
+function evaluateResumeFit(jd, title) {
+  const text = normalize(jd + ' ' + (title || ''));
+  const textLower = text.toLowerCase();
+
+  const breakdown = {
+    skillsOverlap: { score: 0, max: 50, matchedKeywords: [], totalChecked: 0 },
+    titleMatch: { score: 0, max: 20, matched: false, matchedKeyword: '' },
+    experienceLevel: { score: 0, max: 15, yearsRequired: null, yearsInResume: null, note: '' },
+    preferenceMatch: { score: 0, max: 15, matched: [], missed: [] },
+    compNote: '',
+  };
+
+  // --- 1. Skills overlap (50 pts) ---
+  // Check what % of resume keywords appear in the JD
+  if (resumeKeywords.length > 0) {
+    const matched = [];
+    const checked = Math.min(resumeKeywords.length, 150); // check top 150 keywords
+    for (let i = 0; i < checked; i++) {
+      const kw = resumeKeywords[i];
+      if (textLower.includes(kw)) {
+        matched.push(kw);
+      }
+    }
+    breakdown.skillsOverlap.matchedKeywords = matched;
+    breakdown.skillsOverlap.totalChecked = checked;
+    const ratio = matched.length / Math.max(checked, 1);
+    // Scale: 0% overlap = 0pts, 30%+ = full 50pts
+    breakdown.skillsOverlap.score = Math.min(50, Math.round(ratio / 0.3 * 50));
+  } else {
+    // No resume provided, give partial score
+    breakdown.skillsOverlap.score = 25;
+    breakdown.skillsOverlap.note = 'No resume provided - paste your resume for better scoring';
+  }
+
+  // --- 2. Title match (20 pts) ---
+  breakdown.titleMatch.score = 20;
+  breakdown.titleMatch.note = 'No title filter applied';
+
+  // --- 3. Experience level (15 pts) ---
+  const yearsRequired = extractYearsRequired(textLower);
+  const yearsInResume = extractYearsFromResume();
+  breakdown.experienceLevel.yearsRequired = yearsRequired;
+  breakdown.experienceLevel.yearsInResume = yearsInResume;
+
+  if (yearsRequired === null) {
+    breakdown.experienceLevel.score = 12;
+    breakdown.experienceLevel.note = 'No specific years stated in JD';
+  } else if (yearsInResume === null) {
+    breakdown.experienceLevel.score = 10;
+    breakdown.experienceLevel.note = `JD asks for ${yearsRequired}+ years (couldn't detect years in resume)`;
+  } else if (yearsInResume >= yearsRequired) {
+    breakdown.experienceLevel.score = 15;
+    breakdown.experienceLevel.note = `${yearsRequired}+ years required, you have ~${yearsInResume}`;
+  } else if (yearsInResume >= yearsRequired * 0.7) {
+    breakdown.experienceLevel.score = 10;
+    breakdown.experienceLevel.note = `${yearsRequired}+ years required, you have ~${yearsInResume} (close)`;
+  } else {
+    breakdown.experienceLevel.score = 5;
+    breakdown.experienceLevel.note = `${yearsRequired}+ years required, you have ~${yearsInResume} (gap)`;
+  }
+
+  // --- 4. Preference match (15 pts) ---
+  if (mustHaves.length > 0) {
+    const ptsPerPref = 15 / mustHaves.length;
+    for (const pref of mustHaves) {
+      const prefLower = pref.toLowerCase();
+      if (textLower.includes(prefLower)) {
+        breakdown.preferenceMatch.matched.push(pref);
+        breakdown.preferenceMatch.score += ptsPerPref;
+      } else {
+        breakdown.preferenceMatch.missed.push(pref);
+      }
+    }
+    breakdown.preferenceMatch.score = Math.round(breakdown.preferenceMatch.score);
+  } else {
+    breakdown.preferenceMatch.score = 15; // no preferences set = full credit
+  }
+
+  // --- Comp note ---
+  const compMin = parseInt(document.getElementById('compMin').value) || 0;
+  const compMax = parseInt(document.getElementById('compMax').value) || 0;
+  if (compMin || compMax) {
+    const salaryMatch = textLower.match(/\$\s*([\d,]+)\s*[k]?\s*[-\u2013to]+\s*\$?\s*([\d,]+)\s*[k]?/);
+    if (salaryMatch) {
+      let low = parseInt(salaryMatch[1].replace(/,/g, ''));
+      let high = parseInt(salaryMatch[2].replace(/,/g, ''));
+      if (low < 1000) low *= 1000;
+      if (high < 1000) high *= 1000;
+      if (compMin && high < compMin) {
+        breakdown.compNote = `Range ($${low.toLocaleString()}-$${high.toLocaleString()}) below your target`;
+      } else if (compMax && low > compMax) {
+        breakdown.compNote = `Range ($${low.toLocaleString()}-$${high.toLocaleString()}) above target`;
+      } else {
+        breakdown.compNote = `Range ($${low.toLocaleString()}-$${high.toLocaleString()}) overlaps your target`;
+      }
+    }
+  }
+
+  const total = breakdown.skillsOverlap.score + breakdown.titleMatch.score +
+                breakdown.experienceLevel.score + breakdown.preferenceMatch.score;
+
+  return {
+    score: Math.min(total, 100),
+    breakdown
+  };
+}
+
+function extractYearsRequired(text) {
+  const patterns = [
+    /(\d+)\s*\+?\s*years?\s+(?:of\s+)?(?:product|pm|relevant|related|professional|work|industry)/i,
+    /(?:minimum|at least|min)\s+(\d+)\s*\+?\s*years?/i,
+    /(\d+)\s*-\s*\d+\s*years?\s+(?:of\s+)?(?:product|pm|relevant|related|professional|experience)/i,
+    /(\d+)\s*\+?\s*years?\s+(?:of\s+)?experience/i
+  ];
+  for (const p of patterns) {
+    const m = text.match(p);
+    if (m) return parseInt(m[1]);
+  }
+  return null;
+}
+
+function extractYearsFromResume() {
+  if (!resumeText) return null;
+  const text = resumeText.toLowerCase();
+  // Look for patterns like "15 years", "8+ years of experience"
+  const patterns = [
+    /(\d+)\s*\+?\s*years?\s+(?:of\s+)?(?:experience|professional)/i,
+    /(?:over|more than)\s+(\d+)\s*years?/i,
+  ];
+  for (const p of patterns) {
+    const m = text.match(p);
+    if (m) return parseInt(m[1]);
+  }
+  // Try to detect from job date ranges (e.g., "2015 - 2020", "2022 - Present")
+  // Only match years that appear in date-range patterns, not standalone years like graduation dates
+  const currentYear = new Date().getFullYear();
+  const rangePattern = /\b((?:19|20)\d{2})\s*[-–—to]+\s*((?:19|20)\d{2}|present|current|now)\b/gi;
+  const jobYears = [];
+  let rm;
+  while ((rm = rangePattern.exec(text)) !== null) {
+    jobYears.push(parseInt(rm[1]));
+    const endStr = rm[2].toLowerCase();
+    if (endStr === 'present' || endStr === 'current' || endStr === 'now') {
+      jobYears.push(currentYear);
+    } else {
+      jobYears.push(parseInt(rm[2]));
+    }
+  }
+  if (jobYears.length >= 2) {
+    const earliest = Math.min(...jobYears);
+    const latest = Math.max(...jobYears);
+    const span = latest - earliest;
+    if (span > 0 && span < 50) return span;
+  }
+  return null;
+}
+
+// ============================================================
+// API SCANNING
+// ============================================================
+async function startScan() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  if (!apiKey) { alert('Please enter your RapidAPI key above.'); return; }
+
+  // Refresh resume keywords before scanning
+  resumeText = document.getElementById('resumeText').value;
+  resumeKeywords = extractResumeKeywords(resumeText);
+
+  const selected = [];
+  for (const cb of document.querySelectorAll('#companyGrid input[type="checkbox"]:checked')) {
+    selected.push(cb.value);
+  }
+  if (selected.length === 0) { alert('Please select at least one company.'); return; }
+
+  // Always scan whatever is selected; re-scanning a company replaces its old results
+  const toScan = selected;
+  const toScanSet = new Set(toScan.map(c => c.toLowerCase()));
+
+  // Remove stale results from companies we're about to re-scan
+  allResults = allResults.filter(r => !toScanSet.has((r.searchCompany || '').toLowerCase()));
+
+  // Reset scanned state for companies being re-scanned
+  for (const c of toScan) scannedCompanies.delete(c.toLowerCase());
+  updateCompanyGridScannedState();
+
+  // Check for Anthropic key — if present, skip keyword scoring during scan
+  const anthropicKeyForScan = document.getElementById('anthropicKey').value.trim();
+  const skipKeywordScoring = anthropicKeyForScan.length > 0;
+
+  scanning = true;
+  abortController = new AbortController();
+  // Pre-populate seenJobIds only from companies NOT being re-scanned
+  const seenJobIds = new Set(allResults.map(r => r.jobId));
+  const errors = [];
+
+  document.getElementById('scanBtn').disabled = true;
+  document.getElementById('stopBtn').disabled = false;
+  document.getElementById('exportBtn').disabled = true;
+  document.getElementById('progressContainer').classList.add('visible');
+  document.getElementById('resultsSection').style.display = '';
+  document.getElementById('errorLog').innerHTML = '';
+  document.getElementById('scanLog').innerHTML = '';
+
+  // Build search parameters
+  const location = document.getElementById('locationInput').value.trim();
+  const functionalArea = getFunctionalArea('');
+  const defaultTitleFilter = document.getElementById('defaultTitleFilter').value.trim();
+
+  // Pre-fill title filter chips with defaults on a fresh scan (no existing results)
+  if (allResults.length === 0) {
+    setTitleFilterFromDefault();
+  }
+  const CONCURRENCY = 3;
+  let companyIndex = 0;
+  let completedCount = 0;
+
+  logScan(`Scanning ${toScan.length} ${toScan.length === 1 ? 'company' : 'companies'}${allResults.length > 0 ? ` (${allResults.length} existing results kept)` : ''}`);
+
+  function updateProgress(total) {
+    const pct = Math.round((completedCount / total) * 100);
+    document.getElementById('progressBar').style.width = pct + '%';
+    document.getElementById('progressText').textContent =
+      `Scanned ${completedCount} of ${total} companies (${pct}%)`;
+  }
+
+  async function scanWorker() {
+    while (scanning) {
+      const i = companyIndex++;
+      if (i >= toScan.length) break;
+
+      const company = toScan[i];
+      logScan(`Starting: ${company}`);
+
+      try {
+        const {jobs} = await fetchJobs(company, location, functionalArea, apiKey, abortController.signal);
+        const filtered = filterJobsByTitle(jobs, company);
+        let newCount = 0;
+
+        for (const job of filtered) {
+          const jid = job.job_id || (job.job_title + job.employer_name);
+          if (seenJobIds.has(jid)) continue;
+          seenJobIds.add(jid);
+          newCount++;
+
+          const desc = job.job_description || '';
+          const evaluation = skipKeywordScoring ? null : evaluateResumeFit(desc, job.job_title);
+          const isRemote = job.job_is_remote;
+          const contactData = findContact(job.employer_name);
+
+          allResults.push({
+            score: evaluation ? evaluation.score : null,
+            keywordScore: evaluation ? evaluation.score : null,
+            company: job.employer_name || company,
+            searchCompany: company,
+            title: job.job_title,
+            location: job.job_city && job.job_state ? `${job.job_city}, ${job.job_state}` : (job.job_country || ''),
+            remote: isRemote === true ? 'Yes' : isRemote === false ? 'No' : 'Unknown',
+            applyLink: job.job_apply_link || '',
+            evaluation,
+            llmEvaluation: null,
+            contact: contactData,
+            description: desc,
+            jobId: jid
+          });
+        }
+
+        logScan(`${company}: ${newCount} roles found`);
+        scannedCompanies.add(company.toLowerCase());
+        updateCompanyGridScannedState();
+      } catch (e) {
+        const err = e.message || 'Unknown error';
+        errors.push({company, err});
+        logScan(`${company}: ERROR - ${err}`);
+      }
+
+      completedCount++;
+      updateProgress(toScan.length);
+      allResults.sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
+      renderResults();
+
+      // Pace requests: 1s delay per worker keeps total throughput ~3 req/sec
+      await sleep(1000);
+    }
+  }
+
+  await Promise.all(Array.from({length: CONCURRENCY}, () => scanWorker()));
+
+  // Final sort and render
+  allResults.sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
+  renderResults();
+
+  if (errors.length > 0) {
+    document.getElementById('errorLog').innerHTML = '<h3 style="color:var(--red);margin-bottom:0.5rem">Errors (' + errors.length + ')</h3>' +
+      errors.map(e => `<div class="error-item">${escapeHtml(e.company)}: ${escapeHtml(e.err)}</div>`).join('');
+  }
+
+  scanning = false;
+  document.getElementById('scanBtn').disabled = false;
+  document.getElementById('stopBtn').disabled = true;
+  document.getElementById('exportBtn').disabled = allResults.length === 0;
+  updateLLMButtonState();
+  document.getElementById('scanBtn').textContent = 'Search for Jobs';
+
+  // Auto-trigger LLM evaluation if Anthropic key is present
+  const anthropicKeyForAutoLLM = document.getElementById('anthropicKey').value.trim();
+  if (anthropicKeyForAutoLLM && allResults.length > 0) {
+    document.getElementById('progressText').textContent = `Found ${allResults.length} matching roles across ${toScan.length} companies. Starting LLM evaluation...`;
+    // Cache keyword-scored results first
+    try {
+      localStorage.setItem(STORAGE_KEY + '_lastResults', JSON.stringify({
+        timestamp: Date.now(),
+        results: allResults,
+        scannedCompanies: [...scannedCompanies]
+      }));
+    } catch (e) {}
+    // Auto-run LLM pass
+    runLLMEvaluation();
+  } else {
+    const noKeyNote = !anthropicKeyForAutoLLM ? ' Keyword scoring only — add an Anthropic API key in Setup for better results.' : '';
+    document.getElementById('progressText').textContent = `Done! Found ${allResults.length} matching roles across ${toScan.length} companies.${noKeyNote}`;
+    // Cache results
+    if (allResults.length > 0) {
+      try {
+        localStorage.setItem(STORAGE_KEY + '_lastResults', JSON.stringify({
+          timestamp: Date.now(),
+          results: allResults,
+          scannedCompanies: [...scannedCompanies]
+        }));
+      } catch (e) {}
+    }
+  }
+}
+
+async function fetchJobs(company, location, functionalArea, apiKey, signal) {
+  let query = functionalArea ? `${functionalArea} ${company}` : company;
+  if (location) query += ` in ${location}`;
+  const url = `https://jsearch.p.rapidapi.com/search?query=${encodeURIComponent(query)}&num_pages=10`;
+
+  const resp = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'x-rapidapi-key': apiKey,
+      'x-rapidapi-host': 'jsearch.p.rapidapi.com'
+    },
+    signal
+  });
+
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => '');
+    throw new Error(`HTTP ${resp.status}${text ? ': ' + text.slice(0, 100) : ''}`);
+  }
+
+  const data = await resp.json();
+  return { company, jobs: data.data || [] };
+}
+
+function filterJobsByTitle(jobs, searchCompany) {
+  const remoteFilter = document.getElementById('remoteFilter').value;
+  return jobs.filter(job => {
+    if (remoteFilter === 'no-remote' && job.job_is_remote === true) return false;
+    if (remoteFilter === 'only' && job.job_is_remote !== true) return false;
+    return true;
+  });
+}
+
+function findContact(employerName) {
+  if (!employerName || companies.length === 0) return null;
+  const name = employerName.toLowerCase();
+  if (companiesMap[name]) return companiesMap[name];
+  for (const c of companies) {
+    const cn = c.company.toLowerCase();
+    if (name.includes(cn) || cn.includes(name)) return c;
+  }
+  return null;
+}
+
+function stopScan() {
+  scanning = false;
+  if (abortController) abortController.abort();
+  document.getElementById('progressText').textContent = 'Scan stopped.';
+  document.getElementById('scanBtn').disabled = false;
+  document.getElementById('stopBtn').disabled = true;
+  document.getElementById('exportBtn').disabled = allResults.length === 0;
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function logScan(msg) {
+  const log = document.getElementById('scanLog');
+  log.innerHTML += escapeHtml(msg) + '<br>';
+  log.scrollTop = log.scrollHeight;
+}
+
+// ============================================================
+// TITLE FILTER — chip-based, OR logic between chips
+// ============================================================
+function addTitleChip() {
+  const input = document.getElementById('titleFilterInput');
+  const val = input.value.trim().toLowerCase();
+  if (!val) return;
+  if (!titleFilterChips.includes(val)) {
+    titleFilterChips.push(val);
+    renderTitleChips();
+    filterResultsByTitle();
+  }
+  input.value = '';
+}
+
+function removeTitleChip(i) {
+  titleFilterChips.splice(i, 1);
+  renderTitleChips();
+  filterResultsByTitle();
+}
+
+function renderTitleChips() {
+  const container = document.getElementById('titleFilterChips');
+  if (!container) return;
+  const input = document.getElementById('titleFilterInput');
+  container.querySelectorAll('.tag').forEach(t => t.remove());
+  titleFilterChips.forEach((chip, i) => {
+    const el = document.createElement('span');
+    el.className = 'tag';
+    el.innerHTML = `${escapeHtml(chip)} <button class="tag-remove" onclick="removeTitleChip(${i})">×</button>`;
+    container.insertBefore(el, input);
+  });
+  input.placeholder = titleFilterChips.length ? '' : 'Narrow by job title — type and press Enter...';
+}
+
+function clearTitleFilter() {
+  titleFilterChips = [];
+  renderTitleChips();
+  filterResultsByTitle();
+}
+
+function addDefaultTitleChip() {
+  const input = document.getElementById('defaultTitleChipInput');
+  const val = input.value.trim().toLowerCase();
+  if (!val || defaultTitleChips.includes(val)) { input.value = ''; return; }
+  defaultTitleChips.push(val);
+  renderDefaultTitleChips();
+  input.value = '';
+}
+
+function removeDefaultTitleChip(i) {
+  defaultTitleChips.splice(i, 1);
+  renderDefaultTitleChips();
+}
+
+function renderDefaultTitleChips() {
+  const container = document.getElementById('defaultTitleChipsContainer');
+  if (!container) return;
+  const input = document.getElementById('defaultTitleChipInput');
+  container.querySelectorAll('.tag').forEach(t => t.remove());
+  defaultTitleChips.forEach((chip, i) => {
+    const el = document.createElement('span');
+    el.className = 'tag';
+    el.innerHTML = `${escapeHtml(chip)} <button class="tag-remove" onclick="removeDefaultTitleChip(${i})">×</button>`;
+    container.insertBefore(el, input);
+  });
+  input.placeholder = defaultTitleChips.length ? '' : 'Type a title and press Enter...';
+}
+
+function addWizardTitleChip() {
+  const input = document.getElementById('wizardTitleChipInput');
+  const val = input.value.trim().toLowerCase();
+  if (!val || wizardTitleChips.includes(val)) { input.value = ''; return; }
+  wizardTitleChips.push(val);
+  renderWizardTitleChips();
+  input.value = '';
+}
+
+function removeWizardTitleChip(i) {
+  wizardTitleChips.splice(i, 1);
+  renderWizardTitleChips();
+}
+
+function renderWizardTitleChips() {
+  const container = document.getElementById('wizardTitleChipsContainer');
+  if (!container) return;
+  const input = document.getElementById('wizardTitleChipInput');
+  container.querySelectorAll('.tag').forEach(t => t.remove());
+  wizardTitleChips.forEach((chip, i) => {
+    const el = document.createElement('span');
+    el.className = 'tag';
+    el.innerHTML = `${escapeHtml(chip)} <button class="tag-remove" onclick="removeWizardTitleChip(${i})">×</button>`;
+    container.insertBefore(el, input);
+  });
+  input.placeholder = wizardTitleChips.length ? '' : 'Or type a title and press Enter...';
+}
+
+function setTitleFilterFromDefault() {
+  titleFilterChips = [...defaultTitleChips];
+  renderTitleChips();
+}
+
+const TITLE_PRESETS = {
+  'engineer':        ['Software Engineer', 'Senior Software Engineer', 'Staff Engineer', 'Engineering Manager', 'Backend Engineer', 'Frontend Engineer', 'Full Stack Engineer'],
+  'product manager': ['Product Manager', 'Senior Product Manager', 'Staff Product Manager', 'Group Product Manager', 'Director of Product', 'Head of Product', 'Chief of Product'],
+  'designer':        ['Product Designer', 'UX Designer', 'Interaction Designer', 'UX Researcher', 'Visual Designer', 'UX Lead', 'Design Manager'],
+  'data scientist':  ['Data Scientist', 'Senior Data Scientist', 'Machine Learning Engineer', 'Data Analyst', 'ML Engineer', 'Data Engineer', 'Research Scientist'],
+};
+
+function toggleTitleSuggestions(context) {
+  const idMap = {
+    setup:  'setupTitleSuggestionsDropdown',
+    table:  'tableTitleSuggestionsDropdown',
+    wizard: 'wizardTitleSuggestionsDropdown',
+  };
+  const myId = idMap[context];
+  const drop = document.getElementById(myId);
+  Object.values(idMap).forEach(id => { if (id !== myId) { const d = document.getElementById(id); if (d) d.classList.remove('open'); } });
+  if (!drop) return;
+  if (!drop.classList.contains('open')) {
+    renderTitleSuggestions(context, drop);
+    drop.classList.add('open');
+  } else {
+    drop.classList.remove('open');
+  }
+}
+
+function renderTitleSuggestions(context, drop) {
+  const area    = document.getElementById('functionalAreaPreset')?.value;
+  const presets = TITLE_PRESETS[area] || [];
+  const activeChips = context === 'setup' ? defaultTitleChips : context === 'wizard' ? wizardTitleChips : titleFilterChips;
+
+  if (presets.length === 0) {
+    drop.innerHTML = '<div style="font-size:0.8rem;color:var(--text-dim);padding:0.3rem 0.4rem">No suggestions for this functional area.</div>';
+    return;
+  }
+
+  drop.innerHTML = '';
+  for (const title of presets) {
+    const lower   = title.toLowerCase();
+    const isAdded = activeChips.includes(lower);
+    const lbl = document.createElement('label');
+    if (isAdded) lbl.className = 'already-added';
+    const cb = document.createElement('input');
+    cb.type    = 'checkbox';
+    cb.checked = isAdded;
+    cb.addEventListener('change', () => {
+      if (cb.checked) {
+        if (context === 'setup') {
+          if (!defaultTitleChips.includes(lower)) { defaultTitleChips.push(lower); renderDefaultTitleChips(); }
+        } else if (context === 'wizard') {
+          if (!wizardTitleChips.includes(lower)) { wizardTitleChips.push(lower); renderWizardTitleChips(); }
+        } else {
+          if (!titleFilterChips.includes(lower)) { titleFilterChips.push(lower); renderTitleChips(); applyFilters(); }
+        }
+      } else {
+        if (context === 'setup') {
+          const idx = defaultTitleChips.indexOf(lower);
+          if (idx !== -1) { defaultTitleChips.splice(idx, 1); renderDefaultTitleChips(); }
+        } else if (context === 'wizard') {
+          const idx = wizardTitleChips.indexOf(lower);
+          if (idx !== -1) { wizardTitleChips.splice(idx, 1); renderWizardTitleChips(); }
+        } else {
+          const idx = titleFilterChips.indexOf(lower);
+          if (idx !== -1) { titleFilterChips.splice(idx, 1); renderTitleChips(); applyFilters(); }
+        }
+      }
+      lbl.className = cb.checked ? 'already-added' : '';
+    });
+    lbl.appendChild(cb);
+    lbl.appendChild(document.createTextNode(' ' + title));
+    drop.appendChild(lbl);
+  }
+}
+
+document.addEventListener('click', (e) => {
+  ['setupTitleSuggestionsDropdown', 'tableTitleSuggestionsDropdown', 'wizardTitleSuggestionsDropdown'].forEach(id => {
+    const drop = document.getElementById(id);
+    if (drop && drop.classList.contains('open')) {
+      const wrapper = drop.closest('.preset-wrapper');
+      if (wrapper && !wrapper.contains(e.target)) drop.classList.remove('open');
+    }
+  });
+});
+
+function filterResultsByTitle() { applyFilters(); }
+
+function applyFilters() {
+  const titleTerms = titleFilterChips;
+  const keywordRaw = (document.getElementById('keywordFilter')?.value || '').trim().toLowerCase();
+  const keywords = keywordRaw ? keywordRaw.split(/\s+/).filter(Boolean) : [];
+
+  const tbody = document.getElementById('resultsBody');
+  if (!tbody) return;
+  let visibleCount = 0;
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+  let i = 0;
+  while (i < rows.length) {
+    const row = rows[i];
+    if (row.classList.contains('detail-row')) { i++; continue; }
+    const detailRow = rows[i + 1] && rows[i + 1].classList.contains('detail-row') ? rows[i + 1] : null;
+
+    const title = (row.querySelector('.title-cell')?.textContent || '').toLowerCase();
+    const company = (row.querySelector('.company-cell')?.textContent || '').toLowerCase();
+    const location = (row.querySelector('.location-cell')?.textContent || '').toLowerCase();
+    const searchable = `${title} ${company} ${location}`;
+
+    const passesTitle = titleTerms.length === 0 || titleTerms.some(t => title.includes(t));
+    const passesKeyword = keywords.length === 0 || keywords.every(k => searchable.includes(k));
+    const visible = passesTitle && passesKeyword;
+
+    row.style.display = visible ? '' : 'none';
+    if (detailRow) detailRow.style.display = visible ? '' : 'none';
+    if (visible) visibleCount++;
+    i++;
+  }
+  const stats = document.getElementById('resultStats');
+  if (stats) {
+    const filtered = titleTerms.length > 0 || keywords.length > 0;
+    stats.textContent = filtered
+      ? `(${visibleCount} of ${allResults.length} jobs shown)`
+      : `(${allResults.length} jobs found)`;
+  }
+}
+
+// ============================================================
+// RENDERING & SORTING
+// ============================================================
+function renderResults() {
+  const tbody = document.getElementById('resultsBody');
+  tbody.innerHTML = '';
+  document.getElementById('resultStats').textContent = `(${allResults.length} jobs found)`;
+  document.getElementById('clearBtn').style.display = allResults.length > 0 ? '' : 'none';
+
+  for (let i = 0; i < allResults.length; i++) {
+    const r = allResults[i];
+    const hasScore = r.score !== null && r.score !== undefined;
+    const scoreColor = hasScore ? (r.score >= 75 ? 'var(--green)' : r.score >= 55 ? 'var(--yellow)' : r.score >= 35 ? 'var(--orange)' : 'var(--red)') : 'var(--text-dim)';
+    const fitLabel = hasScore ? (r.score >= 75 ? 'Strong' : r.score >= 55 ? 'Good' : r.score >= 40 ? 'Possible' : 'Weak') : '';
+    const remoteBadge = r.remote === 'Yes' ? 'remote-yes' : r.remote === 'No' ? 'remote-no' : 'remote-unknown';
+    const isLLMScore = !!r.llmEvaluation;
+    const scoreIndicator = !hasScore
+      ? ''
+      : isLLMScore
+        ? '<span class="score-type-dot" title="LLM score"></span>'
+        : '<span class="score-type-label">KW</span>';
+    const scoreDisplay = hasScore ? r.score : '<span class="llm-spinner" style="width:16px;height:16px;border-width:2px;display:inline-block;vertical-align:middle"></span>';
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="score-cell" style="color:${scoreColor}">${scoreDisplay}<div style="font-size:0.65rem;font-weight:400;color:var(--text-dim)">${scoreIndicator} ${fitLabel}</div></td>
+      <td class="company-cell">${escapeHtml(r.company)}</td>
+      <td class="contact-cell" style="color:${r.contact && r.contact.contactName ? 'var(--green)' : 'var(--text-dim)'}; font-size:0.85rem">${r.contact && r.contact.contactName ? escapeHtml(r.contact.contactName) : '—'}</td>
+      <td class="title-cell">${r.applyLink ? `<a href="${escapeHtml(r.applyLink)}" target="_blank">${escapeHtml(r.title)}</a>` : escapeHtml(r.title)}</td>
+      <td class="location-cell">${escapeHtml(r.location)}</td>
+      <td><span class="remote-badge ${remoteBadge}">${r.remote}</span></td>
+      <td><button class="expand-btn" onclick="toggleDetail(${i}, this)">+ Details</button></td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  // Re-apply title filter chips if active
+  if (titleFilterChips.length > 0) filterResultsByTitle();
+}
+
+function toggleDetail(idx, btn) {
+  const r = allResults[idx];
+  const tr = btn.closest('tr');
+  const existingDetail = tr.nextElementSibling;
+
+  if (existingDetail && existingDetail.classList.contains('detail-row')) {
+    existingDetail.remove();
+    btn.textContent = '+ Details';
+    return;
+  }
+
+  btn.textContent = '- Details';
+  const detailTr = document.createElement('tr');
+  detailTr.classList.add('detail-row');
+
+  // If evaluation hasn't run yet (LLM-first flow), backfill now for detail display
+  if (!r.evaluation) {
+    r.evaluation = evaluateResumeFit(r.description || '', r.title);
+    r.keywordScore = r.evaluation.score;
+  }
+  const bd = r.evaluation.breakdown;
+
+  // Score breakdown bars
+  function scoreBar(label, pts, max, color) {
+    const pct = Math.round((pts / max) * 100);
+    return `<div style="margin-bottom:0.5rem">
+      <div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:0.2rem">
+        <span>${label}</span><span style="color:var(--text-dim)">${pts}/${max}</span>
+      </div>
+      <div style="height:6px;background:var(--surface);border-radius:3px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:${color};border-radius:3px"></div>
+      </div>
+    </div>`;
+  }
+
+  const sklColor = bd.skillsOverlap.score >= 35 ? 'var(--green)' : bd.skillsOverlap.score >= 20 ? 'var(--yellow)' : 'var(--orange)';
+  const titColor = bd.titleMatch.score >= 15 ? 'var(--green)' : 'var(--red)';
+  const expColor = bd.experienceLevel.score >= 12 ? 'var(--green)' : bd.experienceLevel.score >= 8 ? 'var(--yellow)' : 'var(--orange)';
+  const prefColor = bd.preferenceMatch.score >= 12 ? 'var(--green)' : bd.preferenceMatch.score >= 7 ? 'var(--yellow)' : 'var(--orange)';
+
+  let scoreHtml = scoreBar('Resume Keywords Overlap', bd.skillsOverlap.score, bd.skillsOverlap.max, sklColor);
+  scoreHtml += scoreBar('Title Match', bd.titleMatch.score, bd.titleMatch.max, titColor);
+  if (bd.titleMatch.matched) {
+    scoreHtml += `<div style="font-size:0.75rem;color:var(--text-dim);margin-top:-0.3rem;margin-bottom:0.5rem">Matched: "${escapeHtml(bd.titleMatch.matchedKeyword)}"</div>`;
+  }
+  scoreHtml += scoreBar('Experience Level', bd.experienceLevel.score, bd.experienceLevel.max, expColor);
+  scoreHtml += `<div style="font-size:0.75rem;color:var(--text-dim);margin-top:-0.3rem;margin-bottom:0.5rem">${escapeHtml(bd.experienceLevel.note)}</div>`;
+  scoreHtml += scoreBar('Preference Match', bd.preferenceMatch.score, bd.preferenceMatch.max, prefColor);
+
+  // Keyword matches
+  let keywordsHtml = '';
+  if (bd.skillsOverlap.totalChecked > 0) {
+    // Matched resume keywords
+    keywordsHtml = `<div style="font-size:0.8rem;color:var(--text-dim);margin-bottom:0.3rem">${bd.skillsOverlap.matchedKeywords.length} of ${bd.skillsOverlap.totalChecked} resume keywords found in JD:</div>`;
+    keywordsHtml += '<div style="display:flex;flex-wrap:wrap;gap:0.3rem;margin-bottom:0.75rem">';
+    const topMatches = bd.skillsOverlap.matchedKeywords.slice(0, 30);
+    for (const kw of topMatches) {
+      keywordsHtml += `<span class="keyword-highlight" style="font-size:0.75rem;padding:0.1rem 0.4rem;border-radius:3px">${escapeHtml(kw)}</span>`;
+    }
+    if (bd.skillsOverlap.matchedKeywords.length > 30) {
+      keywordsHtml += `<span style="font-size:0.75rem;color:var(--text-dim)">+${bd.skillsOverlap.matchedKeywords.length - 30} more</span>`;
+    }
+    keywordsHtml += '</div>';
+
+    // JD keywords NOT in resume
+    if (r.description) {
+      const jdGaps = extractJDGaps(r.description);
+      if (jdGaps.length > 0) {
+        const topGaps = jdGaps.slice(0, 25);
+        keywordsHtml += `<div style="font-size:0.8rem;color:var(--text-dim);margin-bottom:0.3rem">JD keywords missing from your resume (${jdGaps.length}):</div>`;
+        keywordsHtml += '<div style="display:flex;flex-wrap:wrap;gap:0.3rem">';
+        for (const kw of topGaps) {
+          keywordsHtml += `<span style="font-size:0.75rem;padding:0.1rem 0.4rem;border-radius:3px;background:rgba(251,191,36,0.15);color:var(--yellow)">${escapeHtml(kw)}</span>`;
+        }
+        if (jdGaps.length > 25) {
+          keywordsHtml += `<span style="font-size:0.75rem;color:var(--text-dim)">+${jdGaps.length - 25} more</span>`;
+        }
+        keywordsHtml += '</div>';
+      }
+    }
+  } else if (bd.skillsOverlap.note) {
+    keywordsHtml = `<div class="no-contact">${escapeHtml(bd.skillsOverlap.note)}</div>`;
+  } else {
+    keywordsHtml = '<div class="no-contact">No matching keywords found between your resume and this JD.</div>';
+  }
+
+  // Preferences detail
+  let prefHtml = '';
+  if (mustHaves.length > 0) {
+    for (const p of bd.preferenceMatch.matched) {
+      prefHtml += `<div class="criteria-item"><span>${escapeHtml(p)}</span><span class="badge badge-pass">Found</span></div>`;
+    }
+    for (const p of bd.preferenceMatch.missed) {
+      prefHtml += `<div class="criteria-item"><span>${escapeHtml(p)}</span><span class="badge badge-fail">Missing</span></div>`;
+    }
+  } else {
+    prefHtml = '<div class="no-contact">No must-have preferences configured. Add them in Setup.</div>';
+  }
+
+  if (bd.compNote) {
+    prefHtml += `<div class="comp-note">${escapeHtml(bd.compNote)}</div>`;
+  }
+
+  // Contact HTML
+  let contactHtml = '';
+  if (r.contact) {
+    contactHtml = `<div class="contact-info">
+      <div class="contact-name">${escapeHtml(r.contact.company)}</div>
+      ${r.contact.contactName ? `<div class="contact-detail"><strong>Contact:</strong> ${escapeHtml(r.contact.contactName)}</div>` : ''}
+      ${r.contact.contactInfo ? `<div class="contact-detail"><strong>Info:</strong> ${escapeHtml(r.contact.contactInfo)}</div>` : ''}
+      ${r.contact.location ? `<div class="contact-detail"><strong>Location:</strong> ${escapeHtml(r.contact.location)}</div>` : ''}
+      ${r.contact.hiring ? `<div class="contact-detail"><strong>Hiring:</strong> ${escapeHtml(r.contact.hiring)}</div>` : ''}
+      ${r.contact.notes ? `<div class="contact-detail"><strong>Notes:</strong> ${escapeHtml(r.contact.notes)}</div>` : ''}
+    </div>`;
+  } else {
+    contactHtml = '<div class="no-contact">No contact info found for this company.</div>';
+  }
+
+  // LLM breakdown card (primary when available)
+  let llmCardHtml = '';
+  if (r.llmEvaluation) {
+    const le = r.llmEvaluation;
+    function llmScoreBar(label, pts, max, color) {
+      const pct = Math.round((pts / max) * 100);
+      return `<div style="margin-bottom:0.5rem">
+        <div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:0.2rem">
+          <span>${label}</span><span style="color:var(--text-dim)">${pts}/${max}</span>
+        </div>
+        <div style="height:6px;background:var(--surface);border-radius:3px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${color};border-radius:3px"></div>
+        </div>
+      </div>`;
+    }
+    const lsklColor = le.skillsFit >= 35 ? 'var(--green)' : le.skillsFit >= 20 ? 'var(--yellow)' : 'var(--orange)';
+    const ltitColor = le.titleFit >= 15 ? 'var(--green)' : le.titleFit >= 8 ? 'var(--yellow)' : 'var(--red)';
+    const lexpColor = le.experienceFit >= 12 ? 'var(--green)' : le.experienceFit >= 8 ? 'var(--yellow)' : 'var(--orange)';
+    const lprefColor = le.preferencesFit >= 12 ? 'var(--green)' : le.preferencesFit >= 7 ? 'var(--yellow)' : 'var(--orange)';
+
+    let llmHtml = '';
+    if (le.summary) {
+      llmHtml += `<div class="llm-summary-text">${escapeHtml(le.summary)}</div>`;
+    }
+    llmHtml += llmScoreBar('Skills Fit', le.skillsFit || 0, 50, lsklColor);
+    if (le.skillsReasoning) llmHtml += `<div style="font-size:0.75rem;color:var(--text-dim);margin-top:-0.3rem;margin-bottom:0.5rem">${escapeHtml(le.skillsReasoning)}</div>`;
+    llmHtml += llmScoreBar('Title Fit', le.titleFit || 0, 20, ltitColor);
+    if (le.titleReasoning) llmHtml += `<div style="font-size:0.75rem;color:var(--text-dim);margin-top:-0.3rem;margin-bottom:0.5rem">${escapeHtml(le.titleReasoning)}</div>`;
+    llmHtml += llmScoreBar('Experience Fit', le.experienceFit || 0, 15, lexpColor);
+    if (le.experienceReasoning) llmHtml += `<div style="font-size:0.75rem;color:var(--text-dim);margin-top:-0.3rem;margin-bottom:0.5rem">${escapeHtml(le.experienceReasoning)}</div>`;
+    llmHtml += llmScoreBar('Preferences Fit', le.preferencesFit || 0, 15, lprefColor);
+    if (le.preferencesReasoning) llmHtml += `<div style="font-size:0.75rem;color:var(--text-dim);margin-top:-0.3rem;margin-bottom:0.5rem">${escapeHtml(le.preferencesReasoning)}</div>`;
+
+    if (le.strengths) {
+      llmHtml += `<div class="llm-section-title">Strengths</div>`;
+      llmHtml += `<div style="font-size:0.8rem;color:var(--green);margin-bottom:0.3rem">${escapeHtml(le.strengths)}</div>`;
+    }
+    if (le.gaps) {
+      llmHtml += `<div class="llm-section-title">Gaps</div>`;
+      llmHtml += `<div style="font-size:0.8rem;color:var(--yellow);margin-bottom:0.3rem">${escapeHtml(le.gaps)}</div>`;
+    }
+
+    llmCardHtml = `<div class="detail-card">
+      <h3 style="color:var(--accent)">LLM Evaluation <span class="llm-badge">Claude</span></h3>
+      ${llmHtml}
+    </div>`;
+  } else {
+    llmCardHtml = `<div class="detail-card">
+      <h3 style="color:var(--accent)">LLM Evaluation <span class="llm-badge">Claude</span></h3>
+      <div class="llm-note">Add an Anthropic API key in Setup for higher-quality LLM evaluation.</div>
+    </div>`;
+  }
+
+  // When LLM is available: LLM card first (primary), keyword card second (supplementary)
+  // When no LLM: keyword card first (primary)
+  const primaryCard = r.llmEvaluation ? llmCardHtml : `<div class="detail-card">
+        <h3>Keyword Score Breakdown</h3>
+        ${scoreHtml}
+        <h3 style="margin-top:0.75rem">Must-Have Preferences</h3>
+        ${prefHtml}
+      </div>`;
+  const secondaryCard = r.llmEvaluation ? `<div class="detail-card" style="opacity:0.85">
+        <h3 style="font-size:0.85rem">Keyword Backup Score: ${r.keywordScore}<span style="font-size:0.75rem;color:var(--text-dim);font-weight:400;margin-left:0.5rem">/ 100</span></h3>
+        ${scoreHtml}
+        <h3 style="margin-top:0.75rem;font-size:0.85rem">Must-Have Preferences</h3>
+        ${prefHtml}
+      </div>` : llmCardHtml;
+
+  detailTr.innerHTML = `<td colspan="7">
+    ${r.contact ? `<div class="contact-banner">${contactHtml}</div>` : ''}
+    <div class="detail-grid" style="grid-template-columns:1fr 1fr 1fr">
+      ${primaryCard}
+      ${secondaryCard}
+      <div class="detail-card">
+        <h3>Resume Keyword Matches</h3>
+        ${keywordsHtml}
+        <h3 style="margin-top:0.75rem">Apply</h3>
+        ${r.applyLink ? `<a href="${escapeHtml(r.applyLink)}" target="_blank" style="color:var(--accent);word-break:break-all">${escapeHtml(r.applyLink)}</a>` : '<span class="no-contact">No application link available.</span>'}
+        ${r.description ? `<details style="margin-top:0.75rem"><summary style="cursor:pointer;color:var(--text-dim);font-size:0.85rem">Show full job description</summary><div style="margin-top:0.5rem;font-size:0.8rem;color:var(--text-dim);max-height:200px;overflow-y:auto;white-space:pre-wrap">${escapeHtml(r.description.slice(0, 3000))}</div></details>` : ''}
+      </div>
+    </div>
+  </td>`;
+
+  tr.after(detailTr);
+}
+
+function sortTable(col) {
+  if (currentSort.col === col) {
+    currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
+  } else {
+    currentSort.col = col;
+    currentSort.dir = (col === 'score') ? 'desc' : 'asc';
+  }
+
+  allResults.sort((a, b) => {
+    let va, vb;
+    if (col === 'score') {
+      va = a[col] ?? -1; vb = b[col] ?? -1;
+    } else {
+      va = (a[col] || '').toLowerCase(); vb = (b[col] || '').toLowerCase();
+    }
+    if (va < vb) return currentSort.dir === 'asc' ? -1 : 1;
+    if (va > vb) return currentSort.dir === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  for (const el of document.querySelectorAll('.sort-arrow')) el.textContent = '';
+  const arrow = document.getElementById('arrow-' + col);
+  if (arrow) arrow.textContent = currentSort.dir === 'asc' ? ' \u25B2' : ' \u25BC';
+
+  renderResults();
+}
+
+// ============================================================
+// CSV EXPORT
+// ============================================================
+function exportCSV() {
+  if (allResults.length === 0) return;
+
+  const headers = ['Score','Score Type','Keyword Score','LLM Score','Skills Overlap','Title Match','Experience','Preferences','Company','Title','Location','Remote','Apply Link','Contact','Contact Info','Hiring Status','Notes','Matched Keywords Count','LLM Summary'];
+  const rows = allResults.map(r => {
+    const bd = r.evaluation.breakdown;
+    const le = r.llmEvaluation;
+    return [
+      r.score,
+      le ? 'LLM' : 'Keyword',
+      r.keywordScore || r.evaluation.score,
+      le ? le.score : '',
+      `${bd.skillsOverlap.score}/${bd.skillsOverlap.max}`,
+      `${bd.titleMatch.score}/${bd.titleMatch.max}`,
+      `${bd.experienceLevel.score}/${bd.experienceLevel.max}`,
+      `${bd.preferenceMatch.score}/${bd.preferenceMatch.max}`,
+      r.company,
+      r.title,
+      r.location,
+      r.remote,
+      r.applyLink,
+      r.contact ? r.contact.company : '',
+      r.contact ? r.contact.contactName : '',
+      r.contact ? r.contact.hiring : '',
+      r.contact ? r.contact.notes : '',
+      bd.skillsOverlap.matchedKeywords ? bd.skillsOverlap.matchedKeywords.length : 0,
+      le ? le.summary : ''
+    ];
+  });
+
+  let csv = headers.map(csvEscape).join(',') + '\n';
+  for (const row of rows) {
+    csv += row.map(csvEscape).join(',') + '\n';
+  }
+
+  navigator.clipboard.writeText(csv).then(() => {
+    alert('CSV copied to clipboard! Also downloading as file.');
+  }).catch(() => {});
+
+  const blob = new Blob([csv], {type: 'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'job_scan_results.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function csvEscape(val) {
+  const s = String(val == null ? '' : val);
+  if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+  return s;
+}
+
+// ============================================================
+// UTILS
+// ============================================================
+function toggleKeyVisibility(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.textContent = 'Hide';
+  } else {
+    input.type = 'password';
+    btn.textContent = 'Show';
+  }
+}
+
+function toggleInfo(panelId) {
+  const panel = document.getElementById(panelId);
+  panel.classList.toggle('open');
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ============================================================
+// TAB SWITCHING
+// ============================================================
+function switchTab(tabName) {
+  const tabs = ['evaluate', 'scanner', 'setup', 'about'];
+  for (const t of tabs) {
+    const panel = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
+    const btn = document.getElementById('tabBtn' + t.charAt(0).toUpperCase() + t.slice(1));
+    if (panel) panel.style.display = t === tabName ? '' : 'none';
+    if (btn) btn.classList.toggle('active', t === tabName);
+  }
+  updateScannerTabState();
+}
+
+function updateScannerTabState() {
+  const hasRapidKey = document.getElementById('apiKey').value.trim().length > 0;
+  const scannerBtn = document.getElementById('tabBtnScanner');
+  const gate = document.getElementById('scannerGate');
+  const scannerContent = document.getElementById('scannerContent');
+
+  scannerBtn.classList.toggle('tab-disabled', !hasRapidKey);
+
+  if (gate && scannerContent) {
+    gate.style.display = hasRapidKey ? 'none' : '';
+    scannerContent.style.display = hasRapidKey ? '' : 'none';
+  }
+}
+
+// ============================================================
+// EVALUATE A POSTING
+// ============================================================
+function evaluatePosting() {
+  const companyName = document.getElementById('evalCompany').value.trim();
+  const jobTitle = document.getElementById('evalTitle').value.trim();
+  const jdText = document.getElementById('evalJD').value.trim();
+
+  if (!jdText) { alert('Please paste a job description to evaluate.'); return; }
+
+  // Refresh resume keywords from textarea
+  resumeText = document.getElementById('resumeText').value;
+  resumeKeywords = extractResumeKeywords(resumeText);
+
+  // Score using existing engine
+  const evaluation = evaluateResumeFit(jdText, jobTitle);
+  const bd = evaluation.breakdown;
+
+  // Look up contact
+  const contact = companyName ? findContact(companyName) : null;
+
+  const anthropicKey = document.getElementById('anthropicKey').value.trim();
+  const hasLLMKey = anthropicKey.length > 0;
+
+  // Render hero score — LLM-primary when key exists, keyword as fallback
+  if (hasLLMKey) {
+    // Show spinner while LLM evaluates
+    document.getElementById('evalScoreHero').innerHTML = `
+      <div class="eval-score-hero">
+        <div class="score-value" style="color:var(--text-dim)" id="evalHeroScoreValue"><span class="llm-spinner" style="width:36px;height:36px;border-width:3px"></span></div>
+        <div class="score-label" id="evalHeroScoreLabel">Evaluating with Claude...</div>
+        <div style="font-size:0.8rem;color:var(--text-dim);margin-top:0.5rem">Keyword backup score: ${evaluation.score}</div>
+      </div>`;
+
+    llmEvaluatePosting(resumeText, jdText, jobTitle, [], mustHaves).then(llmResult => {
+      const ls = llmResult.score;
+      const llmColor = ls >= 75 ? 'var(--green)' : ls >= 55 ? 'var(--yellow)' : ls >= 35 ? 'var(--orange)' : 'var(--red)';
+      const llmFitLabel = ls >= 75 ? 'Strong Fit' : ls >= 55 ? 'Good Fit' : ls >= 40 ? 'Possible Fit' : 'Weak Fit';
+      document.getElementById('evalHeroScoreValue').innerHTML = String(ls);
+      document.getElementById('evalHeroScoreValue').style.color = llmColor;
+      document.getElementById('evalHeroScoreLabel').textContent = llmFitLabel;
+
+      // Add LLM breakdown card to the eval grid
+      renderEvalLLMCard(llmResult);
+    }).catch(err => {
+      // Fall back to keyword score on error
+      const scoreColor = evaluation.score >= 75 ? 'var(--green)' : evaluation.score >= 55 ? 'var(--yellow)' : evaluation.score >= 35 ? 'var(--orange)' : 'var(--red)';
+      const fitLabel = evaluation.score >= 75 ? 'Strong Fit' : evaluation.score >= 55 ? 'Good Fit' : evaluation.score >= 40 ? 'Possible Fit' : 'Weak Fit';
+      document.getElementById('evalHeroScoreValue').innerHTML = String(evaluation.score);
+      document.getElementById('evalHeroScoreValue').style.color = scoreColor;
+      document.getElementById('evalHeroScoreLabel').textContent = fitLabel + ' (keyword — LLM failed)';
+    });
+  } else {
+    // No LLM key — keyword is the hero
+    const scoreColor = evaluation.score >= 75 ? 'var(--green)' : evaluation.score >= 55 ? 'var(--yellow)' : evaluation.score >= 35 ? 'var(--orange)' : 'var(--red)';
+    const fitLabel = evaluation.score >= 75 ? 'Strong Fit' : evaluation.score >= 55 ? 'Good Fit' : evaluation.score >= 40 ? 'Possible Fit' : 'Weak Fit';
+    document.getElementById('evalScoreHero').innerHTML = `
+      <div class="eval-score-hero">
+        <div class="score-value" style="color:${scoreColor}">${evaluation.score}</div>
+        <div class="score-label">${fitLabel}</div>
+        <div style="font-size:0.8rem;color:var(--text-dim);margin-top:0.25rem">Keyword Matching</div>
+        <div style="font-size:0.8rem;color:var(--yellow);margin-top:0.5rem">Add an Anthropic API key in Setup for higher-quality LLM evaluation.</div>
+      </div>`;
+  }
+
+  // Reuse scoreBar helper
+  function scoreBar(label, pts, max, color) {
+    const pct = Math.round((pts / max) * 100);
+    return `<div style="margin-bottom:0.5rem">
+      <div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:0.2rem">
+        <span>${label}</span><span style="color:var(--text-dim)">${pts}/${max}</span>
+      </div>
+      <div style="height:6px;background:var(--surface);border-radius:3px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:${color};border-radius:3px"></div>
+      </div>
+    </div>`;
+  }
+
+  const sklColor = bd.skillsOverlap.score >= 35 ? 'var(--green)' : bd.skillsOverlap.score >= 20 ? 'var(--yellow)' : 'var(--orange)';
+  const titColor = bd.titleMatch.score >= 15 ? 'var(--green)' : 'var(--red)';
+  const expColor = bd.experienceLevel.score >= 12 ? 'var(--green)' : bd.experienceLevel.score >= 8 ? 'var(--yellow)' : 'var(--orange)';
+  const prefColor = bd.preferenceMatch.score >= 12 ? 'var(--green)' : bd.preferenceMatch.score >= 7 ? 'var(--yellow)' : 'var(--orange)';
+
+  // Score breakdown card
+  let scoreHtml = scoreBar('Resume Keywords Overlap', bd.skillsOverlap.score, bd.skillsOverlap.max, sklColor);
+  scoreHtml += scoreBar('Title Match', bd.titleMatch.score, bd.titleMatch.max, titColor);
+  if (bd.titleMatch.matched) {
+    scoreHtml += `<div style="font-size:0.75rem;color:var(--text-dim);margin-top:-0.3rem;margin-bottom:0.5rem">Matched: "${escapeHtml(bd.titleMatch.matchedKeyword)}"</div>`;
+  }
+  scoreHtml += scoreBar('Experience Level', bd.experienceLevel.score, bd.experienceLevel.max, expColor);
+  scoreHtml += `<div style="font-size:0.75rem;color:var(--text-dim);margin-top:-0.3rem;margin-bottom:0.5rem">${escapeHtml(bd.experienceLevel.note)}</div>`;
+  scoreHtml += scoreBar('Preference Match', bd.preferenceMatch.score, bd.preferenceMatch.max, prefColor);
+
+  // Keywords card
+  let keywordsHtml = '';
+  if (bd.skillsOverlap.totalChecked > 0) {
+    // Matched resume keywords
+    keywordsHtml = `<div style="font-size:0.8rem;color:var(--text-dim);margin-bottom:0.3rem">${bd.skillsOverlap.matchedKeywords.length} of ${bd.skillsOverlap.totalChecked} resume keywords found in JD:</div>`;
+    keywordsHtml += '<div style="display:flex;flex-wrap:wrap;gap:0.3rem;margin-bottom:0.75rem">';
+    const topMatches = bd.skillsOverlap.matchedKeywords.slice(0, 30);
+    for (const kw of topMatches) {
+      keywordsHtml += `<span class="keyword-highlight" style="font-size:0.75rem;padding:0.1rem 0.4rem;border-radius:3px">${escapeHtml(kw)}</span>`;
+    }
+    if (bd.skillsOverlap.matchedKeywords.length > 30) {
+      keywordsHtml += `<span style="font-size:0.75rem;color:var(--text-dim)">+${bd.skillsOverlap.matchedKeywords.length - 30} more</span>`;
+    }
+    keywordsHtml += '</div>';
+
+    // JD keywords NOT in resume — gaps to consider adding
+    const jdGaps = extractJDGaps(jdText);
+    if (jdGaps.length > 0) {
+      const topGaps = jdGaps.slice(0, 25);
+      keywordsHtml += `<div style="font-size:0.8rem;color:var(--text-dim);margin-bottom:0.3rem">JD keywords missing from your resume (${jdGaps.length} — consider rewording):</div>`;
+      keywordsHtml += '<div style="display:flex;flex-wrap:wrap;gap:0.3rem">';
+      for (const kw of topGaps) {
+        keywordsHtml += `<span style="font-size:0.75rem;padding:0.1rem 0.4rem;border-radius:3px;background:rgba(251,191,36,0.15);color:var(--yellow)">${escapeHtml(kw)}</span>`;
+      }
+      if (jdGaps.length > 25) {
+        keywordsHtml += `<span style="font-size:0.75rem;color:var(--text-dim)">+${jdGaps.length - 25} more</span>`;
+      }
+      keywordsHtml += '</div>';
+    }
+  } else if (bd.skillsOverlap.note) {
+    keywordsHtml = `<div class="no-contact">${escapeHtml(bd.skillsOverlap.note)}</div>`;
+  } else {
+    keywordsHtml = '<div class="no-contact">No matching keywords found between your resume and this JD.</div>';
+  }
+
+  // Preferences card
+  let prefHtml = '';
+  if (mustHaves.length > 0) {
+    for (const p of bd.preferenceMatch.matched) {
+      prefHtml += `<div class="criteria-item"><span>${escapeHtml(p)}</span><span class="badge badge-pass">Found</span></div>`;
+    }
+    for (const p of bd.preferenceMatch.missed) {
+      prefHtml += `<div class="criteria-item"><span>${escapeHtml(p)}</span><span class="badge badge-fail">Missing</span></div>`;
+    }
+  } else {
+    prefHtml = '<div class="no-contact">No must-have preferences configured. Add them in Setup.</div>';
+  }
+  if (bd.compNote) {
+    prefHtml += `<div class="comp-note">${escapeHtml(bd.compNote)}</div>`;
+  }
+
+  // Contact card
+  let contactHtml = '';
+  if (contact) {
+    contactHtml = `<div class="contact-info">
+      <div class="contact-name">${escapeHtml(contact.company)}</div>
+      ${contact.contactName ? `<div class="contact-detail"><strong>Contact:</strong> ${escapeHtml(contact.contactName)}</div>` : ''}
+      ${contact.contactInfo ? `<div class="contact-detail"><strong>Info:</strong> ${escapeHtml(contact.contactInfo)}</div>` : ''}
+      ${contact.location ? `<div class="contact-detail"><strong>Location:</strong> ${escapeHtml(contact.location)}</div>` : ''}
+      ${contact.hiring ? `<div class="contact-detail"><strong>Hiring:</strong> ${escapeHtml(contact.hiring)}</div>` : ''}
+      ${contact.notes ? `<div class="contact-detail"><strong>Notes:</strong> ${escapeHtml(contact.notes)}</div>` : ''}
+    </div>`;
+  } else if (companyName) {
+    contactHtml = '<div class="no-contact">No contact info found for this company in your sheet.</div>';
+  } else {
+    contactHtml = '<div class="no-contact">Enter a company name to look up contact info.</div>';
+  }
+
+  // LLM card — primary position when key exists
+  const llmCard = hasLLMKey
+    ? `<div class="detail-card" id="evalLLMCard">
+        <h3 style="color:var(--accent)">LLM Evaluation <span class="llm-badge">Claude</span></h3>
+        <div style="text-align:center;padding:2rem"><span class="llm-spinner" style="width:24px;height:24px"></span><div class="llm-note">Evaluating with Claude...</div></div>
+      </div>`
+    : `<div class="detail-card" id="evalLLMCard">
+        <h3 style="color:var(--accent)">LLM Evaluation <span class="llm-badge">Claude</span></h3>
+        <div class="llm-note">Add an Anthropic API key in Setup for higher-quality LLM evaluation.</div>
+      </div>`;
+
+  // Contact banner at top (only if company entered)
+  const contactBannerHtml = companyName ? `<div class="contact-banner">${contactHtml}</div>` : '';
+
+  // Assemble the grid — LLM first when key exists
+  if (hasLLMKey) {
+    document.getElementById('evalBreakdown').innerHTML = `
+      ${contactBannerHtml}
+      ${llmCard}
+      <div class="detail-card" style="opacity:0.85">
+        <h3 style="font-size:0.9rem">Keyword Backup Breakdown</h3>
+        ${scoreHtml}
+      </div>
+      <div class="detail-card">
+        <h3>Resume Keyword Matches</h3>
+        ${keywordsHtml}
+      </div>
+      <div class="detail-card">
+        <h3>Must-Have Preferences</h3>
+        ${prefHtml}
+      </div>
+    `;
+  } else {
+    document.getElementById('evalBreakdown').innerHTML = `
+      ${contactBannerHtml}
+      <div class="detail-card">
+        <h3>Keyword Score Breakdown</h3>
+        ${scoreHtml}
+      </div>
+      ${llmCard}
+      <div class="detail-card">
+        <h3>Resume Keyword Matches</h3>
+        ${keywordsHtml}
+      </div>
+      <div class="detail-card">
+        <h3>Must-Have Preferences</h3>
+        ${prefHtml}
+      </div>
+    `;
+  }
+
+  document.getElementById('evalResults').classList.add('visible');
+}
+// ============================================================
+// LLM EVALUATION (Claude API)
+// ============================================================
+async function llmEvaluatePosting(resume, jdText, jobTitle, titleKws, mustHavePrefs) {
+  const anthropicKey = document.getElementById('anthropicKey').value.trim();
+  if (!anthropicKey) throw new Error('No Anthropic API key configured');
+
+  const titleKwList = (titleKws || []).join(', ') || '(none specified)';
+  const mustHaveList = (mustHavePrefs || []).join(', ') || '(none specified)';
+
+  const prompt = `You are a job fit evaluator. Compare the candidate's resume against the job description and score the fit.
+
+CANDIDATE RESUME:
+${(resume || '(No resume provided)').slice(0, 6000)}
+
+JOB TITLE: ${jobTitle || '(not specified)'}
+
+JOB DESCRIPTION:
+${(jdText || '').slice(0, 6000)}
+
+CANDIDATE'S TARGET TITLE KEYWORDS: ${titleKwList}
+CANDIDATE'S MUST-HAVE PREFERENCES: ${mustHaveList}
+
+Score the fit using these categories. Focus on SEMANTIC and CONCEPTUAL matching — recognize transferable skills, synonymous terminology, and relevant experience even when exact words differ.
+
+Return ONLY valid JSON with this exact structure (no markdown, no code fences):
+{
+  "score": <0-100 overall fit>,
+  "skillsFit": <0-50>,
+  "skillsReasoning": "<1 sentence>",
+  "titleFit": <0-20>,
+  "titleReasoning": "<1 sentence>",
+  "experienceFit": <0-15>,
+  "experienceReasoning": "<1 sentence>",
+  "preferencesFit": <0-15>,
+  "preferencesReasoning": "<1 sentence>",
+  "summary": "<2-3 sentence qualitative assessment>",
+  "gaps": "<key things the JD wants that the resume lacks>",
+  "strengths": "<where the resume particularly shines for this role>"
+}
+
+Scoring guidance:
+- skillsFit (0-50): How well do the candidate's technical skills, tools, and domain expertise match what the JD asks for? Consider synonyms and transferable skills.
+- titleFit (0-20): Does the job title align with the candidate's target roles? Consider seniority level and role type.
+- experienceFit (0-15): Does the candidate's experience level match what's required?
+- preferencesFit (0-15): If the candidate specified must-have preferences, does the JD mention or align with them? If no preferences specified, give 12/15.`;
+
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': anthropicKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1024,
+      messages: [{
+        role: 'user',
+        content: prompt
+      }]
+    })
+  });
+
+  if (!resp.ok) {
+    const errText = await resp.text().catch(() => '');
+    throw new Error(`Anthropic API error ${resp.status}: ${errText.slice(0, 200)}`);
+  }
+
+  const data = await resp.json();
+  const text = data.content?.[0]?.text || '';
+
+  // Parse JSON from response (handle possible markdown fences)
+  let jsonStr = text.trim();
+  const fenceMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (fenceMatch) jsonStr = fenceMatch[1].trim();
+
+  try {
+    const result = JSON.parse(jsonStr);
+    // Clamp scores to valid ranges
+    result.score = Math.max(0, Math.min(100, Math.round(result.score || 0)));
+    result.skillsFit = Math.max(0, Math.min(50, Math.round(result.skillsFit || 0)));
+    result.titleFit = Math.max(0, Math.min(20, Math.round(result.titleFit || 0)));
+    result.experienceFit = Math.max(0, Math.min(15, Math.round(result.experienceFit || 0)));
+    result.preferencesFit = Math.max(0, Math.min(15, Math.round(result.preferencesFit || 0)));
+    return result;
+  } catch (e) {
+    throw new Error('Failed to parse LLM response as JSON: ' + text.slice(0, 200));
+  }
+}
+
+// ============================================================
+// BATCH LLM EVALUATION (Scanner tab)
+// ============================================================
+let llmEvaluating = false;
+
+function updateLLMButtonState() {
+  const btn = document.getElementById('llmEvalBtn');
+  const hasKey = document.getElementById('anthropicKey').value.trim().length > 0;
+  const hasResults = allResults.length > 0;
+  btn.disabled = !hasKey || !hasResults || llmEvaluating || scanning;
+}
+
+async function runLLMEvaluation(forceRerun) {
+  const anthropicKey = document.getElementById('anthropicKey').value.trim();
+  if (!anthropicKey) { alert('Please add your Anthropic API key in Setup & Preferences.'); return; }
+  if (allResults.length === 0) { alert('No scan results to evaluate. Run a scan first.'); return; }
+
+  // If force re-run, clear existing evaluations
+  if (forceRerun) {
+    for (const r of allResults) {
+      r.llmEvaluation = null;
+      r.score = r.keywordScore || (r.evaluation ? r.evaluation.score : null);
+    }
+  }
+
+  llmEvaluating = true;
+  updateLLMButtonState();
+
+  // Refresh resume
+  resumeText = document.getElementById('resumeText').value;
+
+  const progressContainer = document.getElementById('progressContainer');
+  const progressBar = document.getElementById('progressBar');
+  const progressText = document.getElementById('progressText');
+  progressContainer.classList.add('visible');
+
+  let completed = 0;
+  let errors = 0;
+
+  for (let i = 0; i < allResults.length; i++) {
+    const r = allResults[i];
+    // Skip if already evaluated
+    if (r.llmEvaluation) {
+      completed++;
+      continue;
+    }
+
+    const pct = Math.round(((i + 1) / allResults.length) * 100);
+    progressBar.style.width = pct + '%';
+    progressText.textContent = `Evaluating with Claude... ${i + 1} of ${allResults.length} — ${r.company}: ${r.title}`;
+
+    try {
+      const llmResult = await llmEvaluatePosting(resumeText, r.description || '', r.title, [], mustHaves);
+      r.llmEvaluation = llmResult;
+      r.score = llmResult.score; // LLM becomes primary score
+      // Backfill keyword scoring as supplementary data if not already done
+      if (!r.evaluation) {
+        r.evaluation = evaluateResumeFit(r.description || '', r.title);
+        r.keywordScore = r.evaluation.score;
+      }
+    } catch (err) {
+      errors++;
+      logScan(`LLM error for ${r.company} - ${r.title}: ${err.message}`);
+      // Set a minimal error result so we don't retry on re-render
+      r.llmEvaluation = { score: 0, error: err.message, summary: 'LLM evaluation failed: ' + err.message,
+        skillsFit: 0, titleFit: 0, experienceFit: 0, preferencesFit: 0 };
+      // Backfill keyword scoring on error too, so detail rows work
+      if (!r.evaluation) {
+        r.evaluation = evaluateResumeFit(r.description || '', r.title);
+        r.keywordScore = r.evaluation.score;
+        r.score = r.evaluation.score; // Use keyword score as fallback
+      }
+    }
+    completed++;
+
+    // Re-render table as scores come in
+    if (completed % 3 === 0 || i === allResults.length - 1) {
+      renderResults();
+    }
+
+    // Small delay between calls to avoid rate limiting
+    if (i < allResults.length - 1) {
+      await sleep(300);
+    }
+  }
+
+  // Final sort by (now LLM-updated) score
+  allResults.sort((a, b) => b.score - a.score);
+
+  llmEvaluating = false;
+  updateLLMButtonState();
+  renderResults();
+  progressText.textContent = `LLM Evaluation complete! ${completed} evaluated${errors > 0 ? `, ${errors} errors` : ''}.`;
+
+  // Update cached results
+  try {
+    localStorage.setItem(STORAGE_KEY + '_lastResults', JSON.stringify({
+      timestamp: Date.now(),
+      results: allResults,
+      scannedCompanies: [...scannedCompanies]
+    }));
+  } catch (e) {}
+}
+
+// ============================================================
+// RENDER LLM CARD IN EVALUATE TAB (called async after LLM returns)
+// ============================================================
+function renderEvalLLMCard(le) {
+  const card = document.getElementById('evalLLMCard');
+  if (!card) return;
+
+  function llmScoreBar(label, pts, max, color) {
+    const pct = Math.round((pts / max) * 100);
+    return `<div style="margin-bottom:0.5rem">
+      <div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:0.2rem">
+        <span>${label}</span><span style="color:var(--text-dim)">${pts}/${max}</span>
+      </div>
+      <div style="height:6px;background:var(--surface);border-radius:3px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:${color};border-radius:3px"></div>
+      </div>
+    </div>`;
+  }
+
+  const lsklColor = le.skillsFit >= 35 ? 'var(--green)' : le.skillsFit >= 20 ? 'var(--yellow)' : 'var(--orange)';
+  const ltitColor = le.titleFit >= 15 ? 'var(--green)' : le.titleFit >= 8 ? 'var(--yellow)' : 'var(--red)';
+  const lexpColor = le.experienceFit >= 12 ? 'var(--green)' : le.experienceFit >= 8 ? 'var(--yellow)' : 'var(--orange)';
+  const lprefColor = le.preferencesFit >= 12 ? 'var(--green)' : le.preferencesFit >= 7 ? 'var(--yellow)' : 'var(--orange)';
+
+  let html = `<h3 style="color:var(--accent)">LLM Evaluation <span class="llm-badge">Claude</span></h3>`;
+  if (le.summary) html += `<div class="llm-summary-text">${escapeHtml(le.summary)}</div>`;
+  html += llmScoreBar('Skills Fit', le.skillsFit || 0, 50, lsklColor);
+  if (le.skillsReasoning) html += `<div style="font-size:0.75rem;color:var(--text-dim);margin-top:-0.3rem;margin-bottom:0.5rem">${escapeHtml(le.skillsReasoning)}</div>`;
+  html += llmScoreBar('Title Fit', le.titleFit || 0, 20, ltitColor);
+  if (le.titleReasoning) html += `<div style="font-size:0.75rem;color:var(--text-dim);margin-top:-0.3rem;margin-bottom:0.5rem">${escapeHtml(le.titleReasoning)}</div>`;
+  html += llmScoreBar('Experience Fit', le.experienceFit || 0, 15, lexpColor);
+  if (le.experienceReasoning) html += `<div style="font-size:0.75rem;color:var(--text-dim);margin-top:-0.3rem;margin-bottom:0.5rem">${escapeHtml(le.experienceReasoning)}</div>`;
+  html += llmScoreBar('Preferences Fit', le.preferencesFit || 0, 15, lprefColor);
+  if (le.preferencesReasoning) html += `<div style="font-size:0.75rem;color:var(--text-dim);margin-top:-0.3rem;margin-bottom:0.5rem">${escapeHtml(le.preferencesReasoning)}</div>`;
+
+  if (le.strengths) {
+    html += `<div class="llm-section-title">Strengths</div>`;
+    html += `<div style="font-size:0.8rem;color:var(--green);margin-bottom:0.3rem">${escapeHtml(le.strengths)}</div>`;
+  }
+  if (le.gaps) {
+    html += `<div class="llm-section-title">Gaps</div>`;
+    html += `<div style="font-size:0.8rem;color:var(--yellow);margin-bottom:0.3rem">${escapeHtml(le.gaps)}</div>`;
+  }
+
+  card.innerHTML = html;
+}
+
+// ============================================================
+// SETUP WIZARD
+// ============================================================
+function showWizard() {
+  wizardStep = 0;
+  const overlay = document.getElementById('setupWizard');
+  overlay.classList.remove('hidden');
+  // Sync current settings into wizard fields
+  document.getElementById('wizardResume').value = document.getElementById('resumeText').value || '';
+  document.getElementById('wizardAnthropicKey').value = document.getElementById('anthropicKey').value || '';
+  document.getElementById('wizardRapidAPIKey').value = document.getElementById('apiKey').value || '';
+  document.getElementById('wizardFunctionalAreaPreset').value = document.getElementById('functionalAreaPreset').value;
+  document.getElementById('wizardFunctionalAreaCustom').value = document.getElementById('functionalAreaCustom').value || '';
+  onFunctionalAreaChange('wizard');
+  wizardTitleChips = [...defaultTitleChips];
+  renderWizardTitleChips();
+  document.getElementById('wizardLocation').value = document.getElementById('locationInput').value || '';
+  document.getElementById('wizardRemoteFilter').value = document.getElementById('remoteFilter').value;
+  document.getElementById('wizardCompMin').value = document.getElementById('compMin').value || '';
+  document.getElementById('wizardCompMax').value = document.getElementById('compMax').value || '';
+  updateWizardUI();
+}
+
+function updateWizardUI() {
+  // Update progress dots
+  const progress = document.getElementById('wizardProgress');
+  progress.innerHTML = '';
+  for (let i = 0; i < WIZARD_STEPS; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'wizard-dot' + (i === wizardStep ? ' active' : i < wizardStep ? ' done' : '');
+    progress.appendChild(dot);
+  }
+  // Show/hide steps
+  document.querySelectorAll('.wizard-step').forEach(el => {
+    el.classList.toggle('active', parseInt(el.dataset.step) === wizardStep);
+  });
+  // Build summary on last step
+  if (wizardStep === 6) buildWizardSummary();
+}
+
+function wizardNext() {
+  if (wizardStep < WIZARD_STEPS - 1) {
+    wizardStep++;
+    updateWizardUI();
+  }
+}
+
+function wizardBack() {
+  if (wizardStep > 0) {
+    wizardStep--;
+    updateWizardUI();
+  }
+}
+
+function buildWizardSummary() {
+  const resume = document.getElementById('wizardResume').value.trim();
+  const anthropicKey = document.getElementById('wizardAnthropicKey').value.trim();
+  const rapidKey = document.getElementById('wizardRapidAPIKey').value.trim();
+  const functionalArea = getFunctionalArea('wizard');
+  const defaultTitleFilter = wizardTitleChips.join(', ');
+  const location = document.getElementById('wizardLocation').value.trim();
+  const remoteFilter = document.getElementById('wizardRemoteFilter').value;
+  const compMin = document.getElementById('wizardCompMin').value.trim();
+  const compMax = document.getElementById('wizardCompMax').value.trim();
+  const hasSalary = compMin || compMax;
+  const salaryLabel = hasSalary ? (compMin && compMax ? `$${parseInt(compMin).toLocaleString()} – $${parseInt(compMax).toLocaleString()}` : compMin ? `$${parseInt(compMin).toLocaleString()}+` : `Up to $${parseInt(compMax).toLocaleString()}`) : 'Not set';
+
+  let html = '';
+  html += `<div class="wizard-summary-item"><span>Resume</span><span class="${resume ? 'wizard-check' : 'wizard-skip'}">${resume ? 'Provided (' + resume.split(/\s+/).length + ' words)' : 'Skipped'}</span></div>`;
+  html += `<div class="wizard-summary-item"><span>Functional area</span><span class="${functionalArea ? 'wizard-check' : 'wizard-skip'}">${functionalArea ? escapeHtml(functionalArea) : 'Not set (will search by company name only)'}</span></div>`;
+  html += `<div class="wizard-summary-item"><span>Title filter</span><span class="${defaultTitleFilter ? 'wizard-check' : 'wizard-skip'}">${defaultTitleFilter ? escapeHtml(defaultTitleFilter) : 'None (wide search)'}</span></div>`;
+  html += `<div class="wizard-summary-item"><span>Anthropic API Key</span><span class="${anthropicKey ? 'wizard-check' : 'wizard-skip'}">${anthropicKey ? 'Configured' : 'Skipped (keyword scoring only)'}</span></div>`;
+  html += `<div class="wizard-summary-item"><span>RapidAPI Key</span><span class="${rapidKey ? 'wizard-check' : 'wizard-skip'}">${rapidKey ? 'Configured' : 'Skipped (manual evaluation only)'}</span></div>`;
+  html += `<div class="wizard-summary-item"><span>Location</span><span class="${location || remoteFilter !== 'all' ? 'wizard-check' : 'wizard-skip'}">${location ? escapeHtml(location) + (remoteFilter === 'only' ? ' (remote only)' : remoteFilter === 'no-remote' ? ' (on-site/hybrid only)' : '') : remoteFilter === 'only' ? 'Remote only' : remoteFilter === 'no-remote' ? 'On-site / hybrid only' : 'Not set'}</span></div>`;
+  html += `<div class="wizard-summary-item"><span>Target Salary</span><span class="${hasSalary ? 'wizard-check' : 'wizard-skip'}">${salaryLabel}</span></div>`;
+  document.getElementById('wizardSummary').innerHTML = html;
+}
+
+function wizardFinish() {
+  // Copy wizard values to the Setup tab fields
+  document.getElementById('resumeText').value = document.getElementById('wizardResume').value;
+  document.getElementById('anthropicKey').value = document.getElementById('wizardAnthropicKey').value;
+  document.getElementById('apiKey').value = document.getElementById('wizardRapidAPIKey').value;
+  document.getElementById('functionalAreaPreset').value = document.getElementById('wizardFunctionalAreaPreset').value;
+  document.getElementById('functionalAreaCustom').value = document.getElementById('wizardFunctionalAreaCustom').value;
+  onFunctionalAreaChange('');
+  defaultTitleChips = [...wizardTitleChips];
+  renderDefaultTitleChips();
+  document.getElementById('locationInput').value = document.getElementById('wizardLocation').value;
+  document.getElementById('remoteFilter').value = document.getElementById('wizardRemoteFilter').value;
+  document.getElementById('compMin').value = document.getElementById('wizardCompMin').value;
+  document.getElementById('compMax').value = document.getElementById('wizardCompMax').value;
+
+  // Save all settings
+  saveSettings();
+
+  // Hide wizard
+  document.getElementById('setupWizard').classList.add('hidden');
+
+  // Navigate to best tab: Scanner if RapidAPI key was provided, otherwise Evaluate
+  const hasRapidKeyAfterWizard = document.getElementById('apiKey').value.trim().length > 0;
+  switchTab(hasRapidKeyAfterWizard ? 'scanner' : 'evaluate');
+}
+
+function handleWizardResumeUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const status = document.getElementById('wizardFileStatus');
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    document.getElementById('wizardResume').value = e.target.result;
+    status.textContent = 'Loaded: ' + file.name;
+  };
+  reader.onerror = () => { status.textContent = 'Error reading file'; };
+  reader.readAsText(file);
+}
+
+// Ctrl+. — open wizard without clearing data
+document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey && e.key === '.') {
+    e.preventDefault();
+    showWizard();
+  }
+});
+</script>
+
+<div id="companyPopover" onmouseenter="clearTimeout(_popoverTimer)" onmouseleave="hideCompanyPopover()"></div>
+
+</body>
+</html>
