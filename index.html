@@ -2936,7 +2936,7 @@ function toggleDetail(idx, tr) {
 
   detailTr.innerHTML = `<td colspan="7">
     ${r.contact ? `<div class="contact-banner">${contactHtml}</div>` : ''}
-    <div class="detail-grid" style="grid-template-columns:${cols}">
+    <div class="detail-grid" style="grid-template-columns:${cols};align-items:start">
       ${primaryCard}
       ${secondaryCard}
       <div class="detail-card">
@@ -2944,9 +2944,9 @@ function toggleDetail(idx, tr) {
         ${keywordsHtml}
         <h3 style="margin-top:0.75rem">Apply</h3>
         ${r.applyLink ? `<a href="${escapeHtml(r.applyLink)}" target="_blank" style="color:var(--accent);word-break:break-all">${escapeHtml(r.applyLink)}</a>` : '<span class="no-contact">No application link available.</span>'}
+        ${r.description ? `<details style="margin-top:0.75rem"><summary style="cursor:pointer;color:var(--text-dim);font-size:0.85rem">Show full job description</summary><div style="margin-top:0.5rem;font-size:0.8rem;color:var(--text-dim);white-space:pre-wrap">${escapeHtml(r.description.slice(0, 3000))}</div></details>` : ''}
       </div>
     </div>
-    ${r.description ? `<details style="margin-top:0.75rem"><summary style="cursor:pointer;color:var(--text-dim);font-size:0.85rem">Show full job description</summary><div style="margin-top:0.5rem;font-size:0.8rem;color:var(--text-dim);white-space:pre-wrap;overflow-y:auto">${escapeHtml(r.description.slice(0, 3000))}</div></details>` : ''}
   </td>`;
 
   tr.after(detailTr);
