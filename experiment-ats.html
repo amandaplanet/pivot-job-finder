@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ATS Slug Experiment</title>
+<style>
+  :root {
+    --bg: #f5f7f8;
+    --surface: #ffffff;
+    --surface2: #e8f0ee;
+    --border: #c5d8d3;
+    --text: #1a2e2a;
+    --text-dim: #5f7a74;
+    --accent: #048371;
+    --green: #048371;
+    --red: #c0392b;
+    --yellow: #c08800;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 1.5rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  h1 { color: var(--accent); margin-bottom: 0.25rem; font-size: 1.5rem; }
+  .subtitle { color: var(--text-dim); font-size: 0.9rem; margin-bottom: 1.5rem; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; margin-bottom: 1.25rem; }
+  .card h2 { font-size: 1rem; color: var(--accent); margin-bottom: 0.75rem; }
+  .row { display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end; margin-bottom: 0.75rem; }
+  .field { display: flex; flex-direction: column; gap: 0.25rem; }
+  .field label { font-size: 0.85rem; font-weight: 600; color: var(--text-dim); }
+  input[type="text"], textarea, select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.45rem 0.7rem;
+    font-size: 0.9rem;
+    color: var(--text);
+  }
+  textarea { resize: vertical; }
+  input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); border-color: transparent; }
+  button {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 0.55rem 1.25rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button:hover { opacity: 0.9; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-stop { background: var(--red); }
+
+  .stats-row { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+  .stat-box { background: var(--surface2); border-radius: 8px; padding: 0.6rem 1rem; text-align: center; min-width: 100px; flex: 1; }
+  .stat-value { font-size: 1.6rem; font-weight: 800; color: var(--accent); line-height: 1; }
+  .stat-label { font-size: 0.75rem; color: var(--text-dim); margin-top: 0.2rem; }
+
+  .progress-bar-outer { height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden; margin-bottom: 0.75rem; }
+  .progress-bar-inner { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.3s; width: 0%; }
+
+  .log { font-size: 0.8rem; color: var(--text-dim); max-height: 120px; overflow-y: auto; font-family: monospace; background: var(--surface2); border-radius: 6px; padding: 0.5rem 0.75rem; margin-bottom: 1rem; }
+  .log-line { padding: 0.1rem 0; }
+  .log-ok { color: var(--green); }
+  .log-warn { color: var(--yellow); }
+  .log-err { color: var(--red); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  thead th { background: var(--surface2); padding: 0.5rem 0.75rem; text-align: left; position: sticky; top: 0; z-index: 2; font-size: 0.8rem; color: var(--text-dim); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+  tbody tr { border-bottom: 1px solid var(--border); }
+  tbody tr:hover { background: rgba(4,131,113,0.04); }
+  tbody td { padding: 0.45rem 0.75rem; vertical-align: top; }
+  .table-wrapper { overflow-x: auto; overflow-y: auto; max-height: 520px; border: 1px solid var(--border); border-radius: 8px; }
+
+  .badge { display: inline-block; padding: 0.1rem 0.45rem; border-radius: 4px; font-size: 0.7rem; font-weight: 700; }
+  .badge-gh     { background: #d1fae5; color: #065f46; }
+  .badge-lever  { background: #dbeafe; color: #1e40af; }
+  .badge-miss   { background: #fee2e2; color: #991b1b; }
+
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { font-family: monospace; font-size: 0.82rem; }
+</style>
+</head>
+<body>
+
+<h1>ATS Slug Experiment</h1>
+<p class="subtitle">Guesses each company's Greenhouse and/or Lever slug and tests whether it returns live job listings. Export results to build an ATS mapping for the main app.</p>
+
+<div class="card">
+  <h2>Companies</h2>
+  <div class="row" style="margin-bottom:0.6rem">
+    <button onclick="loadFromSheet()" id="loadSheetBtn">Load from Pivot spreadsheet</button>
+    <span style="align-self:center;color:var(--text-dim);font-size:0.85rem">— or paste one company name per line below —</span>
+  </div>
+  <textarea id="companyList" rows="7" style="width:100%;font-family:monospace;font-size:0.82rem" placeholder="Anthropic&#10;HashiCorp&#10;Pivotal&#10;..."></textarea>
+</div>
+
+<div class="card">
+  <h2>Config</h2>
+  <div class="row">
+    <div class="field">
+      <label>Test against</label>
+      <select id="atsChoice">
+        <option value="both">Greenhouse + Lever</option>
+        <option value="greenhouse">Greenhouse only</option>
+        <option value="lever">Lever only</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Concurrency</label>
+      <select id="concurrency">
+        <option value="3" selected>3 (default)</option>
+        <option value="5">5 (faster)</option>
+        <option value="1">1 (careful)</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <div style="display:flex;gap:0.5rem">
+        <button onclick="runExperiment()" id="runBtn">Run</button>
+        <button class="btn-stop" onclick="stopExperiment()" id="stopBtn" disabled>Stop</button>
+        <button class="btn-secondary" onclick="clearAll()">Clear</button>
+        <button class="btn-secondary" onclick="exportCSV()" id="exportBtn" disabled>Export CSV</button>
+      </div>
+    </div>
+  </div>
+  <div class="progress-bar-outer"><div class="progress-bar-inner" id="progressBar"></div></div>
+  <div style="font-size:0.8rem;color:var(--text-dim)" id="statusText">Ready.</div>
+</div>
+
+<div class="card" id="resultsCard" style="display:none">
+  <h2>Results</h2>
+  <div class="stats-row">
+    <div class="stat-box"><div class="stat-value" id="statTested">0</div><div class="stat-label">Tested</div></div>
+    <div class="stat-box"><div class="stat-value" id="statGH">0</div><div class="stat-label">Greenhouse</div></div>
+    <div class="stat-box"><div class="stat-value" id="statLever">0</div><div class="stat-label">Lever</div></div>
+    <div class="stat-box"><div class="stat-value" id="statMiss">0</div><div class="stat-label">No match</div></div>
+  </div>
+  <div class="log" id="logEl"></div>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Company</th>
+          <th>ATS</th>
+          <th>Slug</th>
+          <th>Jobs found</th>
+          <th>Link</th>
+          <th>Slugs tried</th>
+        </tr>
+      </thead>
+      <tbody id="resultsBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────
+let shouldStop = false;
+let results = [];
+let cntTested = 0, cntGH = 0, cntLever = 0, cntMiss = 0;
+
+// ── Slug guessing ──────────────────────────────────────────────
+const SUFFIXES = new Set([
+  'inc','incorporated','corp','corporation','llc','ltd','co','company',
+  'technologies','technology','tech','systems','solutions','software',
+  'labs','laboratory','laboratories','studio','studios','group','holdings',
+  'services','consulting','international','global','partners','ventures',
+  'capital','ai','data','cloud','digital','analytics','media',
+  'health','healthcare','financial','finance','networks','network'
+]);
+
+function guessSlug(company) {
+  const clean = company.toLowerCase().trim().replace(/[.,!]+$/, '');
+  const words  = clean.split(/\s+/);
+  const stripped = words.filter(w => !SUFFIXES.has(w.replace(/[^a-z]/g, '')));
+  const base = stripped.length > 0 ? stripped : words;
+
+  const hyphen = w => w.join('-').replace(/[^a-z0-9-]+/g, '-').replace(/-{2,}/g, '-').replace(/^-|-$/g, '');
+  const concat = w => w.join('').replace(/[^a-z0-9]/g, '');
+
+  return [...new Set([
+    hyphen(words),          // "acme-corp"
+    concat(words),          // "acmecorp"
+    hyphen(base),           // "acme" (suffix stripped)
+    concat(base),           // "acme"
+    words[0].replace(/[^a-z0-9]/g, ''),   // first word
+    base[0]?.replace(/[^a-z0-9]/g, ''),   // first stripped word
+  ].filter(Boolean))];
+}
+
+// ── ATS fetchers ───────────────────────────────────────────────
+async function tryGreenhouse(slug) {
+  const resp = await fetch(
+    `https://boards-api.greenhouse.io/v1/boards/${slug}/jobs`,
+    { signal: AbortSignal.timeout(8000) }
+  );
+  if (!resp.ok) return null;
+  const data = await resp.json();
+  const count = (data.jobs || []).length;
+  return { count, url: `https://boards.greenhouse.io/${slug}` };
+}
+
+async function tryLever(slug) {
+  const resp = await fetch(
+    `https://api.lever.co/v0/postings/${slug}?mode=json`,
+    { signal: AbortSignal.timeout(8000) }
+  );
+  if (!resp.ok) return null;
+  const data = await resp.json();
+  if (!Array.isArray(data)) return null;
+  return { count: data.length, url: `https://jobs.lever.co/${slug}` };
+}
+
+// ── Test one company ───────────────────────────────────────────
+async function testCompany(company, atsChoice) {
+  const slugs  = guessSlug(company);
+  const tried  = [];
+
+  for (const slug of slugs) {
+    tried.push(slug);
+
+    if (atsChoice !== 'lever') {
+      try {
+        const hit = await tryGreenhouse(slug);
+        if (hit) return { company, ats: 'greenhouse', slug, jobCount: hit.count, url: hit.url, slugsTried: tried };
+      } catch (_) {}
+    }
+
+    if (atsChoice !== 'greenhouse') {
+      try {
+        const hit = await tryLever(slug);
+        if (hit) return { company, ats: 'lever', slug, jobCount: hit.count, url: hit.url, slugsTried: tried };
+      } catch (_) {}
+    }
+  }
+
+  return { company, ats: null, slug: null, jobCount: null, url: null, slugsTried: tried };
+}
+
+// ── UI helpers ─────────────────────────────────────────────────
+function log(msg, cls) {
+  const el   = document.getElementById('logEl');
+  const line = document.createElement('div');
+  line.className = 'log-line' + (cls ? ' ' + cls : '');
+  line.textContent = msg;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+
+function updateStats() {
+  document.getElementById('statTested').textContent = cntTested;
+  document.getElementById('statGH').textContent     = cntGH;
+  document.getElementById('statLever').textContent  = cntLever;
+  document.getElementById('statMiss').textContent   = cntMiss;
+}
+
+function addRow(r) {
+  const tbody = document.getElementById('resultsBody');
+  const tr    = document.createElement('tr');
+  const badge =
+    r.ats === 'greenhouse' ? '<span class="badge badge-gh">Greenhouse</span>' :
+    r.ats === 'lever'      ? '<span class="badge badge-lever">Lever</span>' :
+                             '<span class="badge badge-miss">No match</span>';
+  tr.innerHTML = `
+    <td>${escHtml(r.company)}</td>
+    <td>${badge}</td>
+    <td>${r.slug ? `<code>${escHtml(r.slug)}</code>` : '—'}</td>
+    <td>${r.jobCount != null ? r.jobCount : '—'}</td>
+    <td>${r.url ? `<a href="${escHtml(r.url)}" target="_blank">View</a>` : '—'}</td>
+    <td style="font-size:0.75rem;color:var(--text-dim)">${escHtml(r.slugsTried.join(', '))}</td>
+  `;
+  tbody.appendChild(tr);
+}
+
+// ── Main ───────────────────────────────────────────────────────
+async function runExperiment() {
+  const raw = document.getElementById('companyList').value.trim();
+  if (!raw) { alert('Please add companies first.'); return; }
+
+  const companies   = [...new Set(raw.split('\n').map(l => l.trim()).filter(Boolean))];
+  const atsChoice   = document.getElementById('atsChoice').value;
+  const concurrency = parseInt(document.getElementById('concurrency').value);
+
+  // Reset
+  results = [];
+  cntTested = cntGH = cntLever = cntMiss = 0;
+  document.getElementById('resultsBody').innerHTML = '';
+  document.getElementById('logEl').innerHTML       = '';
+  document.getElementById('progressBar').style.width = '0%';
+  document.getElementById('resultsCard').style.display = '';
+  updateStats();
+
+  shouldStop = false;
+  document.getElementById('runBtn').disabled    = true;
+  document.getElementById('stopBtn').disabled   = false;
+  document.getElementById('exportBtn').disabled = true;
+
+  const label = atsChoice === 'both' ? 'Greenhouse + Lever' : atsChoice;
+  log(`Testing ${companies.length} companies against ${label}…`);
+
+  let idx = 0, completed = 0;
+
+  async function worker() {
+    while (!shouldStop) {
+      const i = idx++;
+      if (i >= companies.length) break;
+      const company = companies[i];
+      document.getElementById('statusText').textContent = `Testing ${company}…`;
+
+      try {
+        const r = await testCompany(company, atsChoice);
+        results.push(r);
+        addRow(r);
+        cntTested++;
+        if      (r.ats === 'greenhouse') { cntGH++;    log(`✓ ${company} → Greenhouse / ${r.slug} (${r.jobCount} jobs)`, 'log-ok'); }
+        else if (r.ats === 'lever')      { cntLever++;  log(`✓ ${company} → Lever / ${r.slug} (${r.jobCount} jobs)`, 'log-ok'); }
+        else                             { cntMiss++;   log(`✗ ${company} → no match (tried: ${r.slugsTried.join(', ')})`, 'log-warn'); }
+        updateStats();
+      } catch (e) {
+        cntTested++;
+        log(`! ${company} → error: ${e.message}`, 'log-err');
+        updateStats();
+      }
+
+      completed++;
+      document.getElementById('progressBar').style.width =
+        `${Math.round((completed / companies.length) * 100)}%`;
+    }
+  }
+
+  await Promise.all(Array.from({ length: concurrency }, worker));
+
+  const stopped = shouldStop ? ' (stopped early)' : '';
+  document.getElementById('statusText').textContent =
+    `Done${stopped}. ${cntGH} Greenhouse, ${cntLever} Lever, ${cntMiss} no match.`;
+  document.getElementById('progressBar').style.width = '100%';
+  document.getElementById('runBtn').disabled    = false;
+  document.getElementById('stopBtn').disabled   = true;
+  document.getElementById('exportBtn').disabled = results.length === 0;
+}
+
+function stopExperiment() {
+  shouldStop = true;
+  document.getElementById('stopBtn').disabled = true;
+}
+
+function clearAll() {
+  results = [];
+  cntTested = cntGH = cntLever = cntMiss = 0;
+  document.getElementById('resultsBody').innerHTML = '';
+  document.getElementById('logEl').innerHTML       = '';
+  document.getElementById('progressBar').style.width = '0%';
+  document.getElementById('statusText').textContent  = 'Ready.';
+  document.getElementById('resultsCard').style.display = 'none';
+  document.getElementById('exportBtn').disabled = true;
+  updateStats();
+}
+
+function exportCSV() {
+  const rows = [['Company','ATS','Slug','Jobs Found','Jobs URL','Slugs Tried']];
+  for (const r of results) {
+    rows.push([
+      r.company, r.ats || '', r.slug || '',
+      r.jobCount != null ? r.jobCount : '',
+      r.url || '', r.slugsTried.join(' | ')
+    ]);
+  }
+  const csv  = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = 'ats-slug-results.csv';
+  a.click();
+}
+
+// ── Load from Pivot spreadsheet ────────────────────────────────
+const SHEET_CSV_URL  = 'https://docs.google.com/spreadsheets/d/1fhkgcnVSpg19dfALrWN6hB4kpKRiPrAMCAHacM6_KXw/export?format=csv&gid=284520974';
+const CORS_PROXIES   = [
+  u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+  u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+];
+
+async function loadFromSheet() {
+  const btn = document.getElementById('loadSheetBtn');
+  btn.disabled    = true;
+  btn.textContent = 'Loading…';
+
+  const freshUrl = SHEET_CSV_URL + '&t=' + Date.now();
+  let csvText = null;
+
+  try {
+    const resp = await fetch(freshUrl, { cache: 'no-store' });
+    if (resp.ok) csvText = await resp.text();
+  } catch (_) {}
+
+  if (!csvText) {
+    for (const proxy of CORS_PROXIES) {
+      try {
+        const resp = await fetch(proxy(freshUrl));
+        if (resp.ok) { csvText = await resp.text(); break; }
+      } catch (_) {}
+    }
+  }
+
+  if (!csvText) {
+    alert('Could not fetch spreadsheet automatically. Please paste company names manually.');
+    btn.disabled    = false;
+    btn.textContent = 'Load from Pivot spreadsheet';
+    return;
+  }
+
+  const lines    = csvText.split('\n').filter(l => l.trim());
+  const headers  = parseCSVLine(lines[0]).map(h => h.trim().toLowerCase());
+  const col      = headers.indexOf('company');
+
+  if (col === -1) {
+    alert('No "company" column found.');
+    btn.disabled = false; btn.textContent = 'Load from Pivot spreadsheet';
+    return;
+  }
+
+  const names = [];
+  for (let i = 1; i < lines.length; i++) {
+    const name = (parseCSVLine(lines[i])[col] || '').trim();
+    if (name) names.push(name);
+  }
+
+  document.getElementById('companyList').value = names.join('\n');
+  btn.textContent = `✓ Loaded ${names.length} companies`;
+  setTimeout(() => { btn.disabled = false; btn.textContent = 'Load from Pivot spreadsheet'; }, 2500);
+}
+
+// ── CSV line parser ────────────────────────────────────────────
+function parseCSVLine(line) {
+  const out = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') {
+      if (inQ && line[i + 1] === '"') { cur += '"'; i++; }
+      else inQ = !inQ;
+    } else if (c === ',' && !inQ) {
+      out.push(cur); cur = '';
+    } else {
+      cur += c;
+    }
+  }
+  out.push(cur);
+  return out;
+}
+
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
