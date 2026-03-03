@@ -2335,6 +2335,7 @@ async function startScan() {
   const CONCURRENCY = 3;
   let companyIndex = 0;
   let completedCount = 0;
+  let jsearchQuotaExceeded = false;
 
   logScan(`Scanning ${toScan.length} ${toScan.length === 1 ? 'company' : 'companies'}${allResults.length > 0 ? ` (${allResults.length} existing results kept)` : ''}`);
 
@@ -2362,6 +2363,14 @@ async function startScan() {
           completedCount++;
           updateProgress(toScan.length);
           await sleep(0); // yield to the browser so the UI can repaint
+          continue;
+        }
+
+        if (!hasSlug && jsearchQuotaExceeded) {
+          logScan(`${company}: skipped — JSearch monthly quota reached`);
+          completedCount++;
+          updateProgress(toScan.length);
+          await sleep(0);
           continue;
         }
 
@@ -2407,9 +2416,20 @@ async function startScan() {
         scannedCompanies.add(company.toLowerCase());
         updateCompanyGridScannedState();
       } catch (e) {
-        const err = e.message || 'Unknown error';
-        errors.push({company, err});
-        logScan(`${company}: ERROR - ${err}`);
+        const msg = e.message || 'Unknown error';
+        if (msg === 'JSEARCH_QUOTA_EXCEEDED') {
+          jsearchQuotaExceeded = true;
+          const friendly = 'JSearch monthly quota reached — remaining JSearch companies will be skipped';
+          errors.push({company, err: friendly});
+          logScan(friendly);
+        } else if (msg === 'JSEARCH_RATE_LIMIT') {
+          const friendly = 'JSearch rate limit hit — try again in a minute';
+          errors.push({company, err: friendly});
+          logScan(`${company}: ${friendly}`);
+        } else {
+          errors.push({company, err: msg});
+          logScan(`${company}: ERROR - ${msg}`);
+        }
       }
 
       completedCount++;
@@ -2671,6 +2691,9 @@ async function fetchJobs(company, location, functionalArea, apiKey, signal) {
   });
 
   if (!resp.ok) {
+    if (resp.status === 403) throw new Error('JSEARCH_QUOTA_EXCEEDED');
+    if (resp.status === 429) throw new Error('JSEARCH_RATE_LIMIT');
+    if (resp.status === 401) throw new Error('JSearch API key is invalid — check your key in Setup');
     const text = await resp.text().catch(() => '');
     throw new Error(`HTTP ${resp.status}${text ? ': ' + text.slice(0, 100) : ''}`);
   }
@@ -3563,6 +3586,14 @@ Scoring guidance:
 
   if (!resp.ok) {
     const errText = await resp.text().catch(() => '');
+    if (resp.status === 401) throw new Error('Anthropic API key is invalid — check your key in Setup');
+    if (resp.status === 429 || resp.status === 529) {
+      const retryAfter = parseInt(resp.headers.get('retry-after') || '10');
+      throw new Error(`ANTHROPIC_RATE_LIMIT:${retryAfter}`);
+    }
+    if (resp.status === 402 || errText.toLowerCase().includes('credit') || errText.toLowerCase().includes('billing')) {
+      throw new Error('ANTHROPIC_CREDITS_EXHAUSTED');
+    }
     throw new Error(`Anthropic API error ${resp.status}: ${errText.slice(0, 200)}`);
   }
 
@@ -3632,26 +3663,44 @@ async function runLLMEvaluation(forceRerun) {
     progressBar.style.width = pct + '%';
     progressText.textContent = `Evaluating with Claude... ${i + 1} of ${allResults.length} — ${r.company}: ${r.title}`;
 
-    try {
-      const llmResult = await llmEvaluatePosting(resumeText, r.description || '', r.title, [], mustHaves);
-      r.llmEvaluation = llmResult;
-      r.score = llmResult.score; // LLM becomes primary score
-      // Backfill keyword scoring as supplementary data if not already done
-      if (!r.evaluation) {
-        r.evaluation = evaluateResumeFit(r.description || '', r.title);
-        r.keywordScore = r.evaluation.score;
-      }
-    } catch (err) {
-      errors++;
-      logScan(`LLM error for ${r.company} - ${r.title}: ${err.message}`);
-      // Set a minimal error result so we don't retry on re-render
-      r.llmEvaluation = { score: 0, error: err.message, summary: 'LLM evaluation failed: ' + err.message,
-        skillsFit: 0, titleFit: 0, experienceFit: 0, careerFit: 0 };
-      // Backfill keyword scoring on error too, so detail rows work
-      if (!r.evaluation) {
-        r.evaluation = evaluateResumeFit(r.description || '', r.title);
-        r.keywordScore = r.evaluation.score;
-        r.score = r.evaluation.score; // Use keyword score as fallback
+    let retries = 0;
+    let jobDone = false;
+    while (!jobDone) {
+      try {
+        const llmResult = await llmEvaluatePosting(resumeText, r.description || '', r.title, [], mustHaves);
+        r.llmEvaluation = llmResult;
+        r.score = llmResult.score;
+        if (!r.evaluation) {
+          r.evaluation = evaluateResumeFit(r.description || '', r.title);
+          r.keywordScore = r.evaluation.score;
+        }
+        jobDone = true;
+      } catch (err) {
+        if (err.message.startsWith('ANTHROPIC_RATE_LIMIT:') && retries < 3) {
+          const delaySec = parseInt(err.message.split(':')[1]) || 10;
+          progressText.textContent = `Anthropic rate limit — pausing ${delaySec}s before retry...`;
+          await sleep(delaySec * 1000);
+          retries++;
+          continue;
+        }
+        if (err.message === 'ANTHROPIC_CREDITS_EXHAUSTED') {
+          progressText.textContent = `Anthropic credits exhausted — LLM evaluation stopped after ${completed} jobs. Remaining results use keyword scoring.`;
+          llmEvaluating = false;
+          allResults.sort((a, b) => b.score - a.score);
+          renderResults();
+          return;
+        }
+        // Other errors — log and move on
+        errors++;
+        logScan(`LLM error for ${r.company} - ${r.title}: ${err.message}`);
+        r.llmEvaluation = { score: 0, error: err.message, summary: 'LLM evaluation failed: ' + err.message,
+          skillsFit: 0, titleFit: 0, experienceFit: 0, careerFit: 0 };
+        if (!r.evaluation) {
+          r.evaluation = evaluateResumeFit(r.description || '', r.title);
+          r.keywordScore = r.evaluation.score;
+          r.score = r.evaluation.score;
+        }
+        jobDone = true;
       }
     }
     completed++;
