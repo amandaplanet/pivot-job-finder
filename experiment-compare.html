@@ -83,6 +83,8 @@
   .badge-onsite  { background: var(--surface2); color: var(--text-dim); border: 1px solid var(--border); }
   .badge-unknown { background: #fef3c7; color: #92400e; }
   .badge-filtered { background: #fee2e2; color: #991b1b; font-size: 0.65rem; }
+  .badge-only { background: #fef3c7; color: #92400e; }
+  .job-card.mismatch { border-left: 3px solid #f59e0b; }
 
   a { color: var(--accent); text-decoration: none; }
   a:hover { text-decoration: underline; }
@@ -188,8 +190,7 @@ const SYNONYMS = {
     'engineer', 'developer', 'swe', 'software', 'backend', 'front end', 'frontend',
     'full stack', 'fullstack', 'infrastructure', 'infra', 'site reliability',
     'sre', 'devops', 'dev ops', 'mobile', 'ios', 'android', 'architect',
-    'firmware', 'embedded', 'reliability', 'security engineer',
-    'ml engineer', 'machine learning engineer', 'ai engineer', 'data engineer',
+    'firmware', 'embedded', 'reliability', 'security engineer', 'founding engineer',
     // Management & leadership (not caught by 'engineer' substring)
     'engineering manager', 'engineering director', 'engineering lead',
     'director of engineering', 'vp of engineering', 'vp engineering',
@@ -376,7 +377,7 @@ function remoteBadge(val) {
 }
 
 function renderJobCard(title, company, location, remote, applyLink, extra) {
-  return `<div class="job-card">
+  return `<div class="job-card" data-title="${escHtml(title)}">
     <div class="job-title">${escHtml(title)}</div>
     <div class="job-meta">
       <span>${escHtml(location || '—')}</span>
@@ -415,6 +416,63 @@ async function fetchGreenhouse(slug) {
   return data.jobs || [];
 }
 
+// ── Mismatch detection ────────────────────────────────────────────────────────
+function normalizeTitle(t) {
+  return t.toLowerCase()
+    .replace(/\b(senior|sr\.?|junior|jr\.?|lead|staff|principal|associate|mid|entry.level|level \d+|l\d+)\b/g, '')
+    .replace(/[^a-z0-9 ]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function titlesMatch(a, b) {
+  const na = normalizeTitle(a);
+  const nb = normalizeTitle(b);
+  if (na === nb) return true;
+  if (na.length > 8 && nb.includes(na)) return true;
+  if (nb.length > 8 && na.includes(nb)) return true;
+  return false;
+}
+
+function markMismatches(cards, otherTitles, label) {
+  if (cards.length === 0) return;
+  const list = cards[0].parentElement;
+  const mismatched = [];
+  for (const card of cards) {
+    const title = card.dataset.title || '';
+    const found = otherTitles.some(ot => titlesMatch(title, ot));
+    if (!found) {
+      card.classList.add('mismatch');
+      const meta = card.querySelector('.job-meta');
+      if (meta) {
+        const badge = document.createElement('span');
+        badge.className = 'badge badge-only';
+        badge.textContent = label;
+        meta.prepend(badge);
+      }
+      mismatched.push(card);
+    }
+  }
+  // Move mismatched cards to top of their list
+  for (const card of mismatched.reverse()) {
+    list.prepend(card);
+  }
+}
+
+function crossReference() {
+  const jsCards = [...document.querySelectorAll('#jsearchList .job-card')];
+  const ghCards = [...document.querySelectorAll('#ghList .job-card')];
+  if (jsCards.length === 0 && ghCards.length === 0) return;
+
+  const jsTitles = jsCards.map(c => c.dataset.title || '');
+  const ghTitles = ghCards.map(c => c.dataset.title || '');
+
+  if (jsCards.length > 0 && ghCards.length > 0) {
+    markMismatches(jsCards, ghTitles, 'Not in GH');
+    markMismatches(ghCards, jsTitles, 'Not in JSearch');
+  }
+}
+
 // ── Main comparison ───────────────────────────────────────────────────────────
 async function runComparison() {
   const apiKey     = document.getElementById('apiKey').value.trim();
@@ -445,11 +503,12 @@ async function runComparison() {
   const t0 = Date.now();
 
   // Run both in parallel
-  const [jsearchResult, ghResult] = await Promise.allSettled([
+  await Promise.allSettled([
     apiKey ? runJSearch(companyName, area, customArea, apiKey) : Promise.resolve(null),
     hasGH  ? runGreenhouse(companyEntry.atsSlug, companyName, area, customArea) : Promise.resolve(null),
   ]);
 
+  crossReference();
   document.getElementById('runBtn').disabled = false;
 }
 

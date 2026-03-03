@@ -725,6 +725,10 @@
   .info-panel ol { margin: 0.3rem 0 0 1.25rem; color: var(--text-dim); }
   .info-panel ol li { margin-bottom: 0.2rem; }
 
+  /* Companies unavailable without a JSearch key */
+  label.company-unavailable { opacity: 0.4; cursor: not-allowed; }
+  label.company-unavailable input { cursor: not-allowed; }
+
   /* Disabled scanner tab */
   .tab-btn.tab-disabled {
     opacity: 0.45;
@@ -994,8 +998,8 @@
 <div id="tabScanner">
 
 <div class="scanner-gate" id="scannerGate">
-  <h3>RapidAPI key required</h3>
-  <p style="margin-bottom:1rem">Scanning for jobs at Pivot-connected companies requires a JSearch API key. Add one in the <a href="#" onclick="switchTab('setup');return false" style="color:var(--accent)">Setup tab</a> to enable this feature.</p>
+  <h3>API key or company data required</h3>
+  <p style="margin-bottom:1rem">To scan for jobs, either load companies from the spreadsheet (companies with ATS slugs can be scanned for free) or add a JSearch API key in the <a href="#" onclick="switchTab('setup');return false" style="color:var(--accent)">Setup tab</a>.</p>
   <p style="font-size:0.85rem">You can still evaluate individual postings by pasting them in the Evaluate tab.</p>
 </div>
 
@@ -1719,6 +1723,7 @@ function finishLoadCompanies(csvText, status) {
     companiesMap[c.company.toLowerCase()] = c;
   }
   buildCompanyGrid();
+  updateScannerTabState();
   status.className = 'load-status success';
   status.textContent = `Loaded ${companies.length} companies`;
   gtag('event', 'company_list_loaded', { company_count: companies.length });
@@ -1748,6 +1753,8 @@ function parseCSV(text) {
       hiring: (row[colMap['hiring notes']] || row[colMap['hiring']] || '').trim(),
       notes: (row[colMap['pivot-centric notes']] || row[colMap['notes']] || '').trim(),
       date: (row[colMap['date']] || '').trim(),
+      atsType: (row[colMap['ats type']] || row[colMap['ats_type']] || '').trim().toLowerCase(),
+      atsSlug: (row[colMap['ats slug']] || row[colMap['ats_slug']] || '').trim(),
     });
   }
   return result;
@@ -1839,11 +1846,18 @@ function clearResults() {
 function buildCompanyGrid() {
   const grid = document.getElementById('companyGrid');
   grid.innerHTML = '';
+  const hasRapidKey = document.getElementById('apiKey').value.trim().length > 0;
   const sorted = [...companies].sort((a, b) => a.company.localeCompare(b.company));
   for (const c of sorted) {
     const label = document.createElement('label');
     label.dataset.company = c.company.toLowerCase();
-    label.innerHTML = `<input type="checkbox" value="${escapeHtml(c.company)}"> ${escapeHtml(c.company)}`;
+    const unavailable = !c.atsSlug && !hasRapidKey;
+    if (unavailable) {
+      label.classList.add('company-unavailable');
+      label.innerHTML = `<input type="checkbox" value="${escapeHtml(c.company)}" disabled> ${escapeHtml(c.company)}`;
+    } else {
+      label.innerHTML = `<input type="checkbox" value="${escapeHtml(c.company)}"> ${escapeHtml(c.company)}`;
+    }
     label.addEventListener('mouseenter', () => showCompanyPopover(c, label));
     label.addEventListener('mouseleave', () => { clearTimeout(_popoverTimer); _popoverTimer = setTimeout(hideCompanyPopover, 120); });
     grid.appendChild(label);
@@ -1907,13 +1921,7 @@ function filterCompanies() {
 
 function selectAll() {
   const visible = Array.from(document.querySelectorAll('#companyGrid input[type="checkbox"]'))
-    .filter(cb => !cb.closest('label').classList.contains('hidden'));
-  if (visible.length > 20) {
-    const count = visible.length;
-    const pct = Math.round((count / 200) * 100);
-    const ok = confirm(`Heads up: you're selecting ${count} companies.\n\nThis will use ~${count} API calls (~${pct}% of the free JSearch monthly quota).\n\nContinue?`);
-    if (!ok) return;
-  }
+    .filter(cb => !cb.closest('label').classList.contains('hidden') && !cb.disabled);
   for (const cb of visible) cb.checked = true;
   updateCompanyCount();
 }
@@ -2272,7 +2280,6 @@ function extractYearsFromResume() {
 // ============================================================
 async function startScan() {
   const apiKey = document.getElementById('apiKey').value.trim();
-  if (!apiKey) { alert('Please enter your RapidAPI key above.'); return; }
 
   // Refresh resume keywords before scanning
   resumeText = document.getElementById('resumeText').value;
@@ -2308,7 +2315,9 @@ async function startScan() {
   const errors = [];
 
   document.getElementById('scanBtn').disabled = true;
-  document.getElementById('stopBtn').disabled = false;
+  const stopBtn = document.getElementById('stopBtn');
+  stopBtn.disabled = false;
+  stopBtn.classList.add('btn-danger');
   document.getElementById('exportBtn').disabled = true;
   document.getElementById('progressContainer').classList.add('visible');
   document.getElementById('resultsSection').style.display = '';
@@ -2342,11 +2351,27 @@ async function startScan() {
       if (i >= toScan.length) break;
 
       const company = toScan[i];
-      logScan(`Starting: ${company}`);
 
       try {
-        const {jobs} = await fetchJobs(company, location, functionalArea, apiKey, abortController.signal);
+        const entry = companiesMap[company.toLowerCase()];
+        const hasSlug = !!(entry?.atsSlug);
+        logScan(`Starting: ${company} [${hasSlug ? (entry.atsType + ':' + entry.atsSlug) : 'JSearch'}]`);
+
+        if (!hasSlug && !apiKey) {
+          logScan(`${company}: skipped — no ATS slug and no JSearch key`);
+          completedCount++;
+          updateProgress(toScan.length);
+          await sleep(0); // yield to the browser so the UI can repaint
+          continue;
+        }
+
+        const fetchResult = hasSlug
+          ? await fetchJobsATS(company, functionalArea, location, abortController.signal)
+          : await fetchJobs(company, location, functionalArea, apiKey, abortController.signal);
+        const { jobs } = fetchResult;
+        logScan(`${company}: ${jobs.length} jobs after ATS/synonym filter`);
         const filtered = filterJobsByTitle(jobs, company);
+        if (filtered.length < jobs.length) logScan(`${company}: ${jobs.length - filtered.length} dropped by remote filter (${document.getElementById('remoteFilter').value})`);
         let newCount = 0;
 
         for (const job of filtered) {
@@ -2373,7 +2398,8 @@ async function startScan() {
             llmEvaluation: null,
             contact: contactData,
             description: desc,
-            jobId: jid
+            jobId: jid,
+            source: hasSlug ? 'ats' : 'jsearch',
           });
         }
 
@@ -2409,7 +2435,9 @@ async function startScan() {
 
   scanning = false;
   document.getElementById('scanBtn').disabled = false;
-  document.getElementById('stopBtn').disabled = true;
+  const _stopBtn = document.getElementById('stopBtn');
+  _stopBtn.disabled = true;
+  _stopBtn.classList.remove('btn-danger');
   document.getElementById('exportBtn').disabled = allResults.length === 0;
   document.getElementById('scanBtn').textContent = 'Search for Jobs';
 
@@ -2441,6 +2469,191 @@ async function startScan() {
       } catch (e) {}
     }
   }
+}
+
+// ============================================================
+// ATS HELPERS
+// ============================================================
+function stripHtml(html) {
+  if (!html) return '';
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  return (tmp.textContent || tmp.innerText || '').replace(/\s+/g, ' ').trim();
+}
+
+const SYNONYMS_MAIN = {
+  'engineer': [
+    'engineer', 'developer', 'swe', 'software', 'backend', 'front end', 'frontend',
+    'full stack', 'fullstack', 'infrastructure', 'infra', 'site reliability',
+    'sre', 'devops', 'dev ops', 'mobile', 'ios', 'android', 'architect',
+    'firmware', 'embedded', 'reliability', 'security engineer', 'founding engineer',
+    'engineering manager', 'engineering director', 'engineering lead',
+    'director of engineering', 'vp of engineering', 'vp engineering',
+    'head of engineering', 'chief technology', 'chief technical', 'cto',
+    'vp of technology', 'vp technology', 'head of technology',
+    'technical director', 'technology director',
+    'tech lead', 'technical lead',
+  ],
+  'product manager': [
+    'product manager', 'product management', 'product lead', 'product owner',
+    'product strategist', 'product specialist', 'product director', 'product analyst',
+    'group product', 'head of product', 'chief product', 'cpo',
+    'director of product', 'vp of product', 'vp product',
+    'principal product', 'staff product', 'technical product',
+    'product operations', 'growth product',
+    'program manager',
+    'platform manager',
+  ],
+  'designer': [
+    'designer', 'design', 'ux', 'ui ', ' ui', 'user experience', 'user research',
+    'user researcher', 'interaction design', 'visual design', 'product design',
+    'design manager', 'design lead', 'design director', 'creative director',
+    'brand design', 'motion design', 'content design', 'design strategist',
+  ],
+  'data scientist': [
+    'data scientist', 'data science', 'machine learning', 'ml ', ' ml',
+    'ai researcher', 'artificial intelligence', 'research scientist',
+    'applied scientist', 'data analyst', 'analytics engineer',
+    'quantitative', 'statistician', 'modeling', 'nlp',
+  ],
+};
+
+function matchesSynonymsMain(title, area) {
+  if (!area || area === '') return true;
+  const t = title.toLowerCase();
+  const syns = SYNONYMS_MAIN[area];
+  if (!syns) return true; // unknown/custom area — don't filter
+  return syns.some(s => t.includes(s));
+}
+
+function ghIsRemote(job) {
+  const locName = (job.location?.name || '').toLowerCase();
+  if (locName.includes('remote')) return true;
+  // Companies use different metadata field names: "Location Type", "Workplace Type", etc.
+  const meta = job.metadata || [];
+  for (const m of meta) {
+    const name = (m.name || '').toLowerCase();
+    if (name.includes('location') || name.includes('workplace') || name.includes('work type')) {
+      const val = String(m.value || '').toLowerCase();
+      if (val.includes('remote')) return true;
+      if (val === 'onsite' || val === 'on-site' || val === 'office' || val === 'hybrid') return false;
+    }
+  }
+  return null;
+}
+
+// ============================================================
+// ATS FETCH FUNCTIONS
+// ============================================================
+function normalizeGHJob(job, company) {
+  return {
+    job_id: 'gh_' + job.id,
+    job_title: job.title,
+    employer_name: job.company_name || company,
+    job_city: '',
+    job_state: '',
+    job_country: job.location?.name || '',
+    job_is_remote: ghIsRemote(job),
+    job_apply_link: job.absolute_url,
+    job_description: stripHtml(job.content || ''),
+  };
+}
+
+async function fetchJobsGreenhouse(slug, company, functionalArea, location, signal) {
+  // Fetch the job list WITHOUT ?content=true — with that flag Greenhouse returns
+  // only the ~10 jobs that have a stored HTML description, silently hiding the rest.
+  const listUrl = `https://boards-api.greenhouse.io/v1/boards/${slug}/jobs`;
+  const listResp = await fetch(listUrl, { signal });
+  if (!listResp.ok) throw new Error(`Greenhouse HTTP ${listResp.status}`);
+  const listData = await listResp.json();
+
+  // Apply synonym + location filters on the full job list
+  const allJobs = listData.jobs || [];
+  logScan(`GH ${slug}: ${allJobs.length} total jobs from API`);
+  const loc = location ? location.toLowerCase() : '';
+  const matched = allJobs
+    .filter(j => matchesSynonymsMain(j.title, functionalArea))
+    .filter(j => !loc || (j.location?.name || '').toLowerCase().includes(loc));
+  logScan(`GH ${slug}: ${matched.length} match synonyms for "${functionalArea}"${loc ? ` in "${location}"` : ''}`);
+
+  // Fetch full content (description) for each matched job individually
+  const withContent = await Promise.all(matched.map(async (job) => {
+    try {
+      const detailResp = await fetch(
+        `https://boards-api.greenhouse.io/v1/boards/${slug}/jobs/${job.id}`,
+        { signal }
+      );
+      if (detailResp.ok) {
+        const detail = await detailResp.json();
+        return { ...job, content: detail.content || '' };
+      }
+    } catch (_) {}
+    return job; // fallback: no description
+  }));
+
+  return { company, jobs: withContent.map(j => normalizeGHJob(j, company)) };
+}
+
+function normalizeLeverJob(job, company) {
+  return {
+    job_id: 'lever_' + job.id,
+    job_title: job.text,
+    employer_name: company,
+    job_city: '',
+    job_state: '',
+    job_country: job.categories?.location || '',
+    job_is_remote: job.workplaceType === 'remote' ? true : job.workplaceType === 'onsite' ? false : null,
+    job_apply_link: job.applyUrl || job.hostedUrl,
+    job_description: job.descriptionPlain || stripHtml(job.content?.descriptionBody?.content || ''),
+  };
+}
+
+async function fetchJobsLever(slug, company, functionalArea, location, signal) {
+  const url = `https://api.lever.co/v0/postings/${slug}?mode=json`;
+  const resp = await fetch(url, { signal });
+  if (!resp.ok) throw new Error(`Lever HTTP ${resp.status}`);
+  const data = await resp.json();
+  const loc = location ? location.toLowerCase() : '';
+  const jobs = (Array.isArray(data) ? data : [])
+    .filter(j => matchesSynonymsMain(j.text, functionalArea))
+    .filter(j => !loc || (j.categories?.location || '').toLowerCase().includes(loc));
+  return { company, jobs: jobs.map(j => normalizeLeverJob(j, company)) };
+}
+
+function normalizeAshbyJob(job, company) {
+  return {
+    job_id: 'ashby_' + job.id,
+    job_title: job.title,
+    employer_name: company,
+    job_city: '',
+    job_state: '',
+    job_country: job.location || '',
+    job_is_remote: job.isRemote === true || job.workplaceType === 'Remote' ? true : job.workplaceType === 'OnSite' ? false : null,
+    job_apply_link: job.applyUrl || job.jobUrl,
+    job_description: job.descriptionPlain || stripHtml(job.descriptionHtml || ''),
+  };
+}
+
+async function fetchJobsAshby(slug, company, functionalArea, location, signal) {
+  const url = `https://api.ashbyhq.com/posting-api/job-board/${slug}`;
+  const resp = await fetch(url, { signal });
+  if (!resp.ok) throw new Error(`Ashby HTTP ${resp.status}`);
+  const data = await resp.json();
+  const loc = location ? location.toLowerCase() : '';
+  const jobs = (data.jobs || [])
+    .filter(j => j.isListed !== false)
+    .filter(j => matchesSynonymsMain(j.title, functionalArea))
+    .filter(j => !loc || (j.location || '').toLowerCase().includes(loc));
+  return { company, jobs: jobs.map(j => normalizeAshbyJob(j, company)) };
+}
+
+async function fetchJobsATS(company, functionalArea, location, signal) {
+  const entry = companiesMap[company.toLowerCase()];
+  const { atsType, atsSlug } = entry || {};
+  if (atsType === 'greenhouse') return fetchJobsGreenhouse(atsSlug, company, functionalArea, location, signal);
+  if (atsType === 'lever')      return fetchJobsLever(atsSlug, company, functionalArea, location, signal);
+  if (atsType === 'ashby')      return fetchJobsAshby(atsSlug, company, functionalArea, location, signal);
+  throw new Error(`Unknown ATS type: ${atsType}`);
 }
 
 async function fetchJobs(company, location, functionalArea, apiKey, signal) {
@@ -2491,7 +2704,9 @@ function stopScan() {
   if (abortController) abortController.abort();
   document.getElementById('progressText').textContent = 'Scan stopped.';
   document.getElementById('scanBtn').disabled = false;
-  document.getElementById('stopBtn').disabled = true;
+  const _s = document.getElementById('stopBtn');
+  _s.disabled = true;
+  _s.classList.remove('btn-danger');
   document.getElementById('exportBtn').disabled = allResults.length === 0;
 }
 
@@ -2944,6 +3159,7 @@ function toggleDetail(idx, tr) {
         ${keywordsHtml}
         <h3 style="margin-top:0.75rem">Apply</h3>
         ${r.applyLink ? `<a href="${escapeHtml(r.applyLink)}" target="_blank" style="color:var(--accent);word-break:break-all">${escapeHtml(r.applyLink)}</a>` : '<span class="no-contact">No application link available.</span>'}
+        <div style="margin-top:0.4rem;font-size:0.78rem">${r.source === 'ats' ? '<span style="color:var(--green);font-weight:600">Direct from company</span>' : '<span style="color:var(--text-dim)">Via JSearch (3rd party)</span>'}</div>
         ${r.description ? `<details style="margin-top:0.75rem"><summary style="cursor:pointer;color:var(--text-dim);font-size:0.85rem">Show full job description</summary><div style="margin-top:0.5rem;font-size:0.8rem;color:var(--text-dim);white-space:pre-wrap">${escapeHtml(r.description.slice(0, 3000))}</div></details>` : ''}
       </div>
     </div>
@@ -3079,15 +3295,17 @@ function switchTab(tabName) {
 
 function updateScannerTabState() {
   const hasRapidKey = document.getElementById('apiKey').value.trim().length > 0;
+  const hasAtsCompanies = companies.some(c => c.atsSlug);
+  const canScan = hasRapidKey || hasAtsCompanies;
   const scannerBtn = document.getElementById('tabBtnScanner');
   const gate = document.getElementById('scannerGate');
   const scannerContent = document.getElementById('scannerContent');
 
-  scannerBtn.classList.toggle('tab-disabled', !hasRapidKey);
+  scannerBtn.classList.toggle('tab-disabled', !canScan);
 
   if (gate && scannerContent) {
-    gate.style.display = hasRapidKey ? 'none' : '';
-    scannerContent.style.display = hasRapidKey ? '' : 'none';
+    gate.style.display = canScan ? 'none' : '';
+    scannerContent.style.display = canScan ? '' : 'none';
   }
 }
 
