@@ -776,7 +776,7 @@
       <p>This is a job search tool built on top of the <a href="https://docs.google.com/spreadsheets/d/1fhkgcnVSpg19dfALrWN6hB4kpKRiPrAMCAHacM6_KXw/edit?gid=1217674786#gid=1217674786" target="_blank">Pivot job hunting resources spreadsheet</a>. It is a BYO API app, which means if you want to use certain features you need to supply your own API keys (we'll tell you how later). However, you can use some features even without those.</p>
       <p>Let's get you set up. We'll start with your resume, then set your job preferences, and optionally add API keys for scanning and AI scoring.</p>
       <div class="wizard-nav">
-        <button class="btn-skip" onclick="wizardFinish()">Skip setup</button>
+        <button class="btn-skip" onclick="gtag('event','wizard_skip',{step:wizardStep}); wizardFinish()">Skip setup</button>
         <button onclick="wizardNext()">Next</button>
       </div>
     </div>
@@ -871,7 +871,7 @@
       <div class="wizard-nav">
         <button class="btn-secondary" onclick="wizardBack()">Back</button>
         <div style="display:flex;gap:0.5rem">
-          <button class="btn-skip" onclick="wizardFinish()">Skip for now</button>
+          <button class="btn-skip" onclick="gtag('event','wizard_skip',{step:wizardStep}); wizardFinish()">Skip for now</button>
           <button onclick="wizardNext()">Set up API keys</button>
         </div>
       </div>
@@ -1157,8 +1157,8 @@
       <div class="form-section-title">Location</div>
       <div class="control-row">
         <label for="locationInput">Preferred location:</label>
-        <input type="text" id="locationInput" placeholder="e.g. San Francisco, CA or Texas or New York City" style="flex:2">
-        <select id="remoteFilter" style="padding:0.4rem 0.5rem;border-radius:6px;border:1px solid var(--border);background:var(--surface2);font-size:0.85rem;min-width:auto">
+        <input type="text" id="locationInput" placeholder="e.g. San Francisco, CA or Texas or New York City" style="flex:2" onchange="if(this.value.trim()) gtag('event','filter_changed',{filter:'location',value:this.value.trim()})">
+        <select id="remoteFilter" onchange="gtag('event','filter_changed',{filter:'remote',value:this.value})" style="padding:0.4rem 0.5rem;border-radius:6px;border:1px solid var(--border);background:var(--surface2);font-size:0.85rem;min-width:auto">
           <option value="no-remote">On-site / hybrid only</option>
           <option value="all" selected>On-site / hybrid or remote</option>
           <option value="only">Remote only</option>
@@ -1183,7 +1183,7 @@
       <div class="form-section-title">API Keys</div>
       <div class="control-row">
         <label for="apiKey">RapidAPI Key: <span class="info-toggle" onclick="toggleInfo('rapidApiInfo')" title="How to get this key">?</span></label>
-        <input type="password" id="apiKey" placeholder="Paste your RapidAPI (JSearch) key here...">
+        <input type="password" id="apiKey" placeholder="Paste your RapidAPI (JSearch) key here..." onchange="if(this.value.trim()) gtag('event','api_key_entered',{key_type:'jsearch'})">
         <button class="btn-small btn-secondary" onclick="toggleKeyVisibility('apiKey', this)" style="min-width:auto;padding:0.4rem 0.6rem">Show</button>
       </div>
       <div class="form-hint">Only needed for companies not on Greenhouse, Lever, or Ashby (e.g. Workday, Taleo). Companies with a known ATS can be scanned for free.</div>
@@ -1199,7 +1199,7 @@
 
       <div class="control-row" style="margin-top:0.5rem">
         <label for="anthropicKey">Anthropic API Key: <span class="info-toggle" onclick="toggleInfo('anthropicInfo')" title="How to get this key">?</span></label>
-        <input type="password" id="anthropicKey" placeholder="sk-ant-...">
+        <input type="password" id="anthropicKey" placeholder="sk-ant-..." onchange="if(this.value.trim()) gtag('event','api_key_entered',{key_type:'anthropic'})">
         <button class="btn-small btn-secondary" onclick="toggleKeyVisibility('anthropicKey', this)" style="min-width:auto;padding:0.4rem 0.6rem">Show</button>
       </div>
       <div class="form-hint">Powers LLM evaluation. Without this, scoring falls back to keyword matching.</div>
@@ -1560,6 +1560,7 @@ function onFunctionalAreaChange(prefix) {
   const customId = prefix ? prefix + 'FunctionalAreaCustom' : 'functionalAreaCustom';
   const isOther = document.getElementById(id).value === 'other';
   document.getElementById(customId).style.display = isOther ? '' : 'none';
+  if (!prefix) gtag('event', 'filter_changed', { filter: 'functional_area', value: document.getElementById(id).value });
 }
 
 function getFunctionalArea(prefix) {
@@ -1916,11 +1917,18 @@ function hideCompanyPopover() {
   document.getElementById('companyPopover').style.display = 'none';
 }
 
+let _searchTrackTimer = null;
 function filterCompanies() {
   const q = document.getElementById('companySearch').value.toLowerCase();
   const labels = document.querySelectorAll('#companyGrid label');
   for (const label of labels) {
     label.classList.toggle('hidden', !label.dataset.company.includes(q));
+  }
+  if (q.length > 1) {
+    clearTimeout(_searchTrackTimer);
+    _searchTrackTimer = setTimeout(() => {
+      gtag('event', 'company_search_used', { query_length: q.length });
+    }, 800);
   }
 }
 
@@ -2296,7 +2304,15 @@ async function startScan() {
   }
   if (selected.length === 0) { alert('Please select at least one company.'); return; }
 
-  gtag('event', 'scan_start', { company_count: selected.length });
+  const _atsCount = selected.filter(c => !!companiesMap[c.toLowerCase()]?.atsSlug).length;
+  gtag('event', 'scan_start', {
+    company_count: selected.length,
+    ats_company_count: _atsCount,
+    jsearch_company_count: selected.length - _atsCount,
+    functional_area: document.getElementById('functionalAreaPreset').value || 'custom',
+    location_set: document.getElementById('locationInput').value.trim().length > 0,
+    remote_filter: document.getElementById('remoteFilter').value,
+  });
 
   // Always scan whatever is selected; re-scanning a company replaces its old results
   const toScan = selected;
@@ -2465,6 +2481,13 @@ async function startScan() {
   _stopBtn.classList.remove('btn-danger');
   document.getElementById('exportBtn').disabled = allResults.length === 0;
   document.getElementById('scanBtn').textContent = 'Search for Jobs';
+  gtag('event', 'scan_complete', {
+    total_results: allResults.length,
+    ats_results: allResults.filter(r => r.source === 'ats').length,
+    jsearch_results: allResults.filter(r => r.source === 'jsearch').length,
+    error_count: errors.length,
+    companies_scanned: toScan.length,
+  });
 
   // Auto-trigger LLM evaluation if Anthropic key is present
   const anthropicKeyForAutoLLM = document.getElementById('anthropicKey').value.trim();
@@ -2730,12 +2753,18 @@ function findContact(employerName) {
 function stopScan() {
   scanning = false;
   if (abortController) abortController.abort();
+  gtag('event', 'scan_stopped', { results_so_far: allResults.length });
   document.getElementById('progressText').textContent = 'Scan stopped.';
   document.getElementById('scanBtn').disabled = false;
   const _s = document.getElementById('stopBtn');
   _s.disabled = true;
   _s.classList.remove('btn-danger');
   document.getElementById('exportBtn').disabled = allResults.length === 0;
+}
+
+function trackApplyClick(idx) {
+  const r = allResults[idx];
+  if (r) gtag('event', 'apply_click', { company: r.company, job_title: r.title, source: r.source || 'unknown' });
 }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
@@ -3002,7 +3031,7 @@ function renderResults() {
       <td class="score-cell" style="color:${scoreColor}">${scoreDisplay}<div style="font-size:0.65rem;font-weight:400;color:var(--text-dim)">${scoreIndicator} ${fitLabel}</div></td>
       <td class="company-cell">${escapeHtml(r.company)}</td>
       <td class="contact-cell" style="color:${r.contact && r.contact.contactName ? 'var(--green)' : 'var(--text-dim)'}; font-size:0.85rem">${r.contact && r.contact.contactName ? escapeHtml(r.contact.contactName) : '—'}</td>
-      <td class="title-cell">${r.applyLink ? `<a href="${escapeHtml(r.applyLink)}" target="_blank">${escapeHtml(r.title)}</a>` : escapeHtml(r.title)}</td>
+      <td class="title-cell">${r.applyLink ? `<a href="${escapeHtml(r.applyLink)}" target="_blank" onclick="trackApplyClick(${_idx})">${escapeHtml(r.title)}</a>` : escapeHtml(r.title)}</td>
       <td class="location-cell">${escapeHtml(r.location)}</td>
       <td><span class="remote-badge ${remoteBadge}">${r.remote}</span></td>
       <td><button class="expand-btn">+ Details</button></td>
@@ -3026,6 +3055,8 @@ function toggleDetail(idx, tr) {
   }
 
   if (btn) btn.textContent = '- Details';
+  const r0 = allResults[idx];
+  if (r0) gtag('event', 'detail_opened', { company: r0.company, job_title: r0.title, source: r0.source || 'unknown' });
   const detailTr = document.createElement('tr');
   detailTr.classList.add('detail-row');
 
@@ -3186,7 +3217,7 @@ function toggleDetail(idx, tr) {
         <h3>Resume Keyword Matches</h3>
         ${keywordsHtml}
         <h3 style="margin-top:0.75rem">Apply</h3>
-        ${r.applyLink ? `<a href="${escapeHtml(r.applyLink)}" target="_blank" style="color:var(--accent);word-break:break-all">${escapeHtml(r.applyLink)}</a>` : '<span class="no-contact">No application link available.</span>'}
+        ${r.applyLink ? `<a href="${escapeHtml(r.applyLink)}" target="_blank" onclick="trackApplyClick(${idx})" style="color:var(--accent);word-break:break-all">${escapeHtml(r.applyLink)}</a>` : '<span class="no-contact">No application link available.</span>'}
         <div style="margin-top:0.4rem;font-size:0.78rem">${r.source === 'ats' ? '<span style="color:var(--green);font-weight:600">Direct from company</span>' : '<span style="color:var(--text-dim)">Via JSearch (3rd party)</span>'}</div>
         ${r.description ? `<details style="margin-top:0.75rem"><summary style="cursor:pointer;color:var(--text-dim);font-size:0.85rem">Show full job description</summary><div style="margin-top:0.5rem;font-size:0.8rem;color:var(--text-dim);white-space:pre-wrap">${escapeHtml(r.description.slice(0, 3000))}</div></details>` : ''}
       </div>
@@ -3828,6 +3859,7 @@ function updateWizardUI() {
 function wizardNext() {
   if (wizardStep < WIZARD_STEPS - 1) {
     wizardStep++;
+    gtag('event', 'wizard_step_view', { step: wizardStep });
     updateWizardUI();
   }
 }
@@ -3835,6 +3867,7 @@ function wizardNext() {
 function wizardBack() {
   if (wizardStep > 0) {
     wizardStep--;
+    gtag('event', 'wizard_step_view', { step: wizardStep, direction: 'back' });
     updateWizardUI();
   }
 }
