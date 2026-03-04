@@ -862,10 +862,10 @@
     <div class="wizard-step" data-step="3">
       <h2>Your preferences are saved!</h2>
       <p>You're ready to start evaluating individual job postings right now — just paste any job description into the <strong>Evaluate a Posting</strong> tab.</p>
-      <p>To unlock the full feature set, you'll need two free API keys:</p>
+      <p>You can also scan companies directly — many use Greenhouse, Lever, or Ashby, which don't require any API key. For companies that don't, you'll need a JSearch key. And for AI-powered scoring, you'll need an Anthropic key.</p>
       <div style="background:var(--surface2);border-radius:8px;padding:0.85rem 1rem;margin-bottom:0.75rem;display:flex;flex-direction:column;gap:0.5rem">
-        <div><strong>JSearch</strong> — scans Pivot-connected companies for open roles automatically</div>
-        <div><strong>Anthropic</strong> — scores each job against your resume using Claude AI</div>
+        <div><strong>JSearch</strong> <span style="color:var(--text-dim);font-size:0.85rem">(optional)</span> — needed only for companies not on Greenhouse, Lever, or Ashby</div>
+        <div><strong>Anthropic</strong> <span style="color:var(--text-dim);font-size:0.85rem">(optional)</span> — scores each job against your resume using Claude AI</div>
       </div>
       <p style="font-size:0.875rem;color:var(--text-dim)">Both have free tiers and take about 5 minutes to set up. You can also skip this and add them later in the <strong style="color:var(--text)">Setup</strong> tab.</p>
       <div class="wizard-nav">
@@ -879,8 +879,8 @@
 
     <!-- Step 5: JSearch (RapidAPI) Key -->
     <div class="wizard-step" data-step="4">
-      <h2>JSearch API Key</h2>
-      <p>Required to scan for open roles at Pivot-connected companies. Without it, you can still evaluate individual postings manually in the Evaluate tab.</p>
+      <h2>JSearch API Key <span style="font-size:0.75rem;font-weight:400;color:var(--text-dim)">(optional)</span></h2>
+      <p>Companies on Greenhouse, Lever, or Ashby can be scanned without any API key. JSearch is only needed for companies that use other job systems like Workday, Taleo, or their own site.</p>
 
       <div style="background:var(--surface2);border-radius:8px;padding:0.85rem 1rem;margin-bottom:0.75rem">
         <div style="font-weight:600;margin-bottom:0.3rem">How to get your JSearch key:</div>
@@ -889,7 +889,7 @@
           <li>Sign up (free), then subscribe to the <strong style="color:var(--text)">free tier</strong></li>
           <li>Copy your API key from the "X-RapidAPI-Key" header in the playground</li>
         </ul>
-        <div style="font-size:0.8rem;color:var(--text-dim)">The free tier gives 200 requests/month — enough for 2 full scans of all companies.</div>
+        <div style="font-size:0.8rem;color:var(--text-dim)">The free tier gives 200 requests/month — each non-ATS company uses one request per scan.</div>
       </div>
 
       <div class="form-section">
@@ -1186,7 +1186,7 @@
         <input type="password" id="apiKey" placeholder="Paste your RapidAPI (JSearch) key here...">
         <button class="btn-small btn-secondary" onclick="toggleKeyVisibility('apiKey', this)" style="min-width:auto;padding:0.4rem 0.6rem">Show</button>
       </div>
-      <div class="form-hint">Required for scanning jobs at Pivot-connected companies.</div>
+      <div class="form-hint">Only needed for companies not on Greenhouse, Lever, or Ashby (e.g. Workday, Taleo). Companies with a known ATS can be scanned for free.</div>
       <div class="info-panel" id="rapidApiInfo">
         <strong>How to get a JSearch API key:</strong>
         <ol>
@@ -1194,7 +1194,7 @@
           <li>Sign up (free), then subscribe to the <strong>free tier</strong></li>
           <li>Copy your API key from the "X-RapidAPI-Key" header in the playground</li>
         </ol>
-        <div style="margin-top:0.3rem;font-size:0.8rem;color:var(--text-dim)">The free tier gives 200 requests/month — enough for 2 full scans of all companies.</div>
+        <div style="margin-top:0.3rem;font-size:0.8rem;color:var(--text-dim)">The free tier gives 200 requests/month — each non-ATS company uses one request per scan.</div>
       </div>
 
       <div class="control-row" style="margin-top:0.5rem">
@@ -1464,7 +1464,7 @@ const WIZARD_STEPS = 7;
 
   updateScannerTabState();
 
-  // Default tab: Scanner if RapidAPI key exists, otherwise Evaluate
+  // Default tab: Evaluate until companies are loaded (scanner gate handles the rest)
   const initRapidKey = document.getElementById('apiKey').value.trim();
   if (!initRapidKey) {
     switchTab('evaluate');
@@ -1872,7 +1872,12 @@ function showCompanyPopover(c, anchor) {
   clearTimeout(_popoverTimer);
   _popoverTimer = setTimeout(() => {
     const pop = document.getElementById('companyPopover');
+    const hasRapidKey = document.getElementById('apiKey').value.trim().length > 0;
+    const unavailable = !c.atsSlug && !hasRapidKey;
     let html = `<div class="pop-name">${escapeHtml(c.company)}</div>`;
+    if (unavailable) {
+      html += `<div style="font-size:0.78rem;color:var(--yellow);margin-bottom:0.4rem;padding:0.3rem 0.4rem;background:rgba(192,136,0,0.08);border-radius:4px">Requires a JSearch API key — add one in Setup to enable scanning.</div>`;
+    }
     if (c.contactName) html += `<div class="pop-row"><span class="pop-lbl">Contact</span><span>${escapeHtml(c.contactName)}</span></div>`;
     if (c.contactInfo) html += `<div class="pop-row"><span class="pop-lbl">Info</span><span>${escapeHtml(c.contactInfo)}</span></div>`;
     if (c.location)    html += `<div class="pop-row"><span class="pop-lbl">Location</span><span>${escapeHtml(c.location)}</span></div>`;
@@ -3852,7 +3857,7 @@ function buildWizardSummary() {
   html += `<div class="wizard-summary-item"><span>Functional area</span><span class="${functionalArea ? 'wizard-check' : 'wizard-skip'}">${functionalArea ? escapeHtml(functionalArea) : 'Not set (will search by company name only)'}</span></div>`;
   html += `<div class="wizard-summary-item"><span>Title filter</span><span class="${defaultTitleFilter ? 'wizard-check' : 'wizard-skip'}">${defaultTitleFilter ? escapeHtml(defaultTitleFilter) : 'None (wide search)'}</span></div>`;
   html += `<div class="wizard-summary-item"><span>Anthropic API Key</span><span class="${anthropicKey ? 'wizard-check' : 'wizard-skip'}">${anthropicKey ? 'Configured' : 'Skipped (keyword scoring only)'}</span></div>`;
-  html += `<div class="wizard-summary-item"><span>RapidAPI Key</span><span class="${rapidKey ? 'wizard-check' : 'wizard-skip'}">${rapidKey ? 'Configured' : 'Skipped (manual evaluation only)'}</span></div>`;
+  html += `<div class="wizard-summary-item"><span>JSearch Key</span><span class="${rapidKey ? 'wizard-check' : 'wizard-skip'}">${rapidKey ? 'Configured' : 'Skipped (ATS companies still scannable)'}</span></div>`;
   html += `<div class="wizard-summary-item"><span>Location</span><span class="${location || remoteFilter !== 'all' ? 'wizard-check' : 'wizard-skip'}">${location ? escapeHtml(location) + (remoteFilter === 'only' ? ' (remote only)' : remoteFilter === 'no-remote' ? ' (on-site/hybrid only)' : '') : remoteFilter === 'only' ? 'Remote only' : remoteFilter === 'no-remote' ? 'On-site / hybrid only' : 'Not set'}</span></div>`;
   html += `<div class="wizard-summary-item"><span>Target Salary</span><span class="${hasSalary ? 'wizard-check' : 'wizard-skip'}">${salaryLabel}</span></div>`;
   document.getElementById('wizardSummary').innerHTML = html;
@@ -3886,8 +3891,8 @@ function wizardFinish() {
     has_anthropic_key: hasAnthropicKeyAfterWizard,
   });
 
-  // Navigate to best tab: Scanner if RapidAPI key was provided, otherwise Evaluate
-  switchTab(hasRapidKeyAfterWizard ? 'scanner' : 'evaluate');
+  // Navigate to Scanner — ATS companies don't need a JSearch key to scan
+  switchTab('scanner');
 }
 
 function handleWizardResumeUpload(event) {
