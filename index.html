@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" type="image/png" href="favicon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
 <title>Pivot Job Finder</title>
@@ -1241,6 +1242,15 @@
     </div>
 
     <div class="controls">
+      <h2 style="color:var(--accent);font-size:1.2rem;margin-bottom:0.75rem">Limitations</h2>
+      <p style="color:var(--text-dim);font-size:0.95rem;line-height:1.7">
+        Result quality depends on what applicant tracking system each company uses, and whether the type and slug have been added to the spreadsheet.
+        For jobs posted on Greenhouse, Ashby, and Lever, we pull listings directly from the primary source.
+        For jobs posted on Workday and other systems, we don't have direct access, so JSearch pulls from third-party aggregators.
+      </p>
+    </div>
+
+    <div class="controls">
       <h2 style="color:var(--accent);font-size:1.2rem;margin-bottom:0.75rem">Made by</h2>
       <p style="color:var(--text-dim);font-size:0.95rem;line-height:1.7">
         Vibe-coded by <a href="https://www.linkedin.com/in/amandamichellewhite/" target="_blank" style="color:var(--text);font-weight:700">Amanda White</a>.<br>
@@ -1464,9 +1474,10 @@ const WIZARD_STEPS = 7;
 
   updateScannerTabState();
 
-  // Default tab: Evaluate until companies are loaded (scanner gate handles the rest)
+  // Default tab: Evaluate if neither a RapidAPI key nor any ATS companies are available
   const initRapidKey = document.getElementById('apiKey').value.trim();
-  if (!initRapidKey) {
+  const initHasAts = companies.some(c => c.atsSlug);
+  if (!initRapidKey && !initHasAts) {
     switchTab('evaluate');
   }
 
@@ -2524,8 +2535,12 @@ async function startScan() {
 // ============================================================
 function stripHtml(html) {
   if (!html) return '';
+  // Strip tags first (including malformed/unclosed ones) to prevent the browser's HTML
+  // parser from swallowing text content as attribute values when parsing tmp.innerHTML
+  const noTags = html.replace(/<[^>]*>?/g, ' ');
+  // Then pass through DOM solely for entity decoding (&amp; &nbsp; etc.)
   const tmp = document.createElement('div');
-  tmp.innerHTML = html;
+  tmp.innerHTML = noTags;
   return (tmp.textContent || tmp.innerText || '').replace(/\s+/g, ' ').trim();
 }
 
@@ -2547,7 +2562,9 @@ const SYNONYMS_MAIN = {
     'product strategist', 'product specialist', 'product director', 'product analyst',
     'group product', 'head of product', 'chief product', 'cpo',
     'director of product', 'vp of product', 'vp product',
-    'principal product', 'staff product', 'technical product',
+    'principal product manager', 'principal product lead', 'principal product owner',
+    'staff product manager', 'staff product lead', 'staff product owner',
+    'technical product manager', 'technical product lead',
     'product operations', 'growth product',
     'program manager',
     'platform manager',
@@ -2581,7 +2598,7 @@ function ghIsRemote(job) {
   const meta = job.metadata || [];
   for (const m of meta) {
     const name = (m.name || '').toLowerCase();
-    if (name.includes('location') || name.includes('workplace') || name.includes('work type')) {
+    if (name.includes('location type') || name.includes('workplace') || name.includes('work type')) {
       const val = String(m.value || '').toLowerCase();
       if (val.includes('remote')) return true;
       if (val === 'onsite' || val === 'on-site' || val === 'office' || val === 'hybrid') return false;
@@ -2752,6 +2769,7 @@ function findContact(employerName) {
 
 function stopScan() {
   scanning = false;
+  llmEvaluating = false;
   if (abortController) abortController.abort();
   gtag('event', 'scan_stopped', { results_so_far: allResults.length });
   document.getElementById('progressText').textContent = 'Scan stopped.';
@@ -3219,7 +3237,7 @@ function toggleDetail(idx, tr) {
         <h3 style="margin-top:0.75rem">Apply</h3>
         ${r.applyLink ? `<a href="${escapeHtml(r.applyLink)}" target="_blank" onclick="trackApplyClick(${idx})" style="color:var(--accent);word-break:break-all">${escapeHtml(r.applyLink)}</a>` : '<span class="no-contact">No application link available.</span>'}
         <div style="margin-top:0.4rem;font-size:0.78rem">${r.source === 'ats' ? '<span style="color:var(--green);font-weight:600">Direct from company</span>' : '<span style="color:var(--text-dim)">Via JSearch (3rd party)</span>'}</div>
-        ${r.description ? `<details style="margin-top:0.75rem"><summary style="cursor:pointer;color:var(--text-dim);font-size:0.85rem">Show full job description</summary><div style="margin-top:0.5rem;font-size:0.8rem;color:var(--text-dim);white-space:pre-wrap">${escapeHtml(r.description.slice(0, 3000))}</div></details>` : ''}
+        ${r.description ? `<details style="margin-top:0.75rem"><summary style="cursor:pointer;color:var(--text-dim);font-size:0.85rem">Show full job description</summary><div style="margin-top:0.5rem;font-size:0.8rem;color:var(--text-dim);line-height:1.6">${renderDescription(r.description.slice(0, 3000))}</div></details>` : ''}
       </div>
     </div>
   </td>`;
@@ -3335,6 +3353,30 @@ function toggleInfo(panelId) {
 function escapeHtml(str) {
   if (!str) return '';
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderDescription(text) {
+  if (!text) return '';
+  // Strip HTML tags including unclosed/malformed ones (>? makes closing > optional)
+  let s = text.replace(/<[^>]*>?/g, '');
+  // Decode common HTML entities before escaping
+  s = s.replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<')
+       .replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+  // Escape for safe HTML output
+  s = escapeHtml(s);
+  // Markdown: headings
+  s = s.replace(/^### (.+)$/gm, '<strong>$1</strong>');
+  s = s.replace(/^#{1,2} (.+)$/gm, '<strong style="font-size:0.9em">$1</strong>');
+  // Bold and italic
+  s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  // Bullet lists
+  s = s.replace(/^[ \t]*[-*] (.+)$/gm, '<li>$1</li>');
+  s = s.replace(/(<li>[\s\S]*<\/li>)/, '<ul style="margin:0.25rem 0 0.25rem 1.25rem;padding:0">$1</ul>');
+  // Paragraphs and line breaks
+  s = s.replace(/\n{2,}/g, '</p><p style="margin:0.4rem 0 0">');
+  s = s.replace(/\n/g, '<br>');
+  return '<p style="margin:0">' + s + '</p>';
 }
 
 // ============================================================
@@ -3676,6 +3718,11 @@ async function runLLMEvaluation(forceRerun) {
   llmEvaluating = true;
   gtag('event', 'llm_evaluate_start', { job_count: allResults.length, force_rerun: !!forceRerun });
 
+  const stopBtn = document.getElementById('stopBtn');
+  document.getElementById('scanBtn').disabled = true;
+  stopBtn.disabled = false;
+  stopBtn.classList.add('btn-danger');
+
   // Refresh resume
   resumeText = document.getElementById('resumeText').value;
 
@@ -3724,6 +3771,10 @@ async function runLLMEvaluation(forceRerun) {
           llmEvaluating = false;
           allResults.sort((a, b) => b.score - a.score);
           renderResults();
+          document.getElementById('scanBtn').disabled = false;
+          const _sb = document.getElementById('stopBtn');
+          _sb.disabled = true;
+          _sb.classList.remove('btn-danger');
           return;
         }
         // Other errors — log and move on
@@ -3746,6 +3797,13 @@ async function runLLMEvaluation(forceRerun) {
       renderResults();
     }
 
+    // Check if user stopped
+    if (!llmEvaluating) {
+      allResults.sort((a, b) => b.score - a.score);
+      renderResults();
+      return;
+    }
+
     // Small delay between calls to avoid rate limiting
     if (i < allResults.length - 1) {
       await sleep(300);
@@ -3758,6 +3816,10 @@ async function runLLMEvaluation(forceRerun) {
   llmEvaluating = false;
   renderResults();
   progressText.textContent = `LLM Evaluation complete! ${completed} evaluated${errors > 0 ? `, ${errors} errors` : ''}.`;
+  document.getElementById('scanBtn').disabled = false;
+  const _llmStopBtn = document.getElementById('stopBtn');
+  _llmStopBtn.disabled = true;
+  _llmStopBtn.classList.remove('btn-danger');
 
   // Update cached results
   try {

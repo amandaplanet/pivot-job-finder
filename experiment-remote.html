@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Remote Detection Experiment</title>
+<style>
+  :root {
+    --bg: #f5f7f8;
+    --surface: #ffffff;
+    --surface2: #e8f0ee;
+    --border: #c5d8d3;
+    --text: #1a2e2a;
+    --text-dim: #5f7a74;
+    --accent: #048371;
+    --green: #048371;
+    --red: #c0392b;
+    --yellow: #c08800;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 1.5rem;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  h1 { color: var(--accent); margin-bottom: 0.25rem; font-size: 1.5rem; }
+  .subtitle { color: var(--text-dim); font-size: 0.9rem; margin-bottom: 1.5rem; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; margin-bottom: 1.25rem; }
+  .card h2 { font-size: 1rem; color: var(--accent); margin-bottom: 0.75rem; }
+  .row { display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end; margin-bottom: 0.75rem; }
+  .field { display: flex; flex-direction: column; gap: 0.25rem; }
+  .field label { font-size: 0.85rem; font-weight: 600; color: var(--text-dim); }
+  input[type="text"], textarea {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.45rem 0.7rem;
+    font-size: 0.9rem;
+    color: var(--text);
+  }
+  textarea { resize: vertical; }
+  input:focus, textarea:focus { outline: 2px solid var(--accent); border-color: transparent; }
+  button {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 0.55rem 1.25rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button:hover { opacity: 0.9; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+
+  .stats-row { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+  .stat-box { background: var(--surface2); border-radius: 8px; padding: 0.6rem 1rem; text-align: center; min-width: 100px; flex: 1; }
+  .stat-value { font-size: 1.6rem; font-weight: 800; color: var(--accent); line-height: 1; }
+  .stat-value.red { color: var(--red); }
+  .stat-value.yellow { color: var(--yellow); }
+  .stat-label { font-size: 0.75rem; color: var(--text-dim); margin-top: 0.2rem; }
+
+  .progress-bar-outer { height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden; margin-bottom: 0.75rem; }
+  .progress-bar-inner { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.3s; width: 0%; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  thead th { background: var(--surface2); padding: 0.5rem 0.75rem; text-align: left; position: sticky; top: 0; z-index: 2; font-size: 0.8rem; color: var(--text-dim); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+  tbody tr { border-bottom: 1px solid var(--border); }
+  tbody tr:hover { background: rgba(4,131,113,0.04); }
+  tbody td { padding: 0.45rem 0.75rem; vertical-align: top; }
+  .table-wrapper { overflow-x: auto; overflow-y: auto; max-height: 600px; border: 1px solid var(--border); border-radius: 8px; }
+
+  /* Diff highlight */
+  tr.diff-row { background: #fffbeb; }
+  tr.diff-row:hover { background: #fef3c7; }
+
+  .badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; }
+  .badge-yes     { background: #d1fae5; color: #065f46; }
+  .badge-no      { background: #fee2e2; color: #991b1b; }
+  .badge-unknown { background: var(--surface2); color: var(--text-dim); }
+  .badge-diff    { background: #fef3c7; color: #92400e; outline: 2px solid #f59e0b; }
+
+  .meta-detail { font-size: 0.75rem; color: var(--text-dim); font-family: monospace; margin-top: 0.2rem; }
+
+  .filter-row { display: flex; gap: 0.75rem; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; }
+  .filter-row label { font-size: 0.85rem; font-weight: 600; color: var(--text-dim); }
+  .filter-row select { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 0.35rem 0.6rem; font-size: 0.85rem; color: var(--text); }
+
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .logic-box { background: var(--surface2); border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.82rem; font-family: monospace; color: var(--text); margin-bottom: 0.75rem; line-height: 1.7; }
+  .logic-box .removed { color: var(--red); text-decoration: line-through; }
+  .logic-box .added   { color: var(--green); font-weight: 700; }
+</style>
+</head>
+<body>
+
+<h1>Remote Detection Experiment</h1>
+<p class="subtitle">Compares two versions of <code>ghIsRemote()</code> across Greenhouse job boards. Highlighted rows differ between the two.</p>
+
+<div class="card">
+  <h2>Logic being compared</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+    <div>
+      <div style="font-size:0.8rem;font-weight:700;color:var(--text-dim);margin-bottom:0.4rem">ORIGINAL — field name check</div>
+      <div class="logic-box">name.includes('<span class="removed">location</span>')<br>|| name.includes('workplace')<br>|| name.includes('work type')</div>
+    </div>
+    <div>
+      <div style="font-size:0.8rem;font-weight:700;color:var(--text-dim);margin-bottom:0.4rem">NEW — excludes "posting" fields</div>
+      <div class="logic-box">(name.includes('location') <span class="added">&amp;&amp; !name.includes('posting')</span>)<br>|| name.includes('workplace')<br>|| name.includes('work type')</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Greenhouse slugs to test</h2>
+  <textarea id="slugList" rows="5" style="width:100%;font-family:monospace;font-size:0.82rem" placeholder="contentful&#10;hashicorp&#10;anthropic&#10;...">contentful</textarea>
+  <div class="row" style="margin-top:0.75rem">
+    <button onclick="runExperiment()" id="runBtn">Run</button>
+    <button class="btn-secondary" onclick="clearAll()">Clear</button>
+  </div>
+  <div class="progress-bar-outer" style="margin-top:0.75rem"><div class="progress-bar-inner" id="progressBar"></div></div>
+  <div style="font-size:0.8rem;color:var(--text-dim)" id="statusText">Ready.</div>
+</div>
+
+<div class="card" id="resultsCard" style="display:none">
+  <h2>Results</h2>
+  <div class="stats-row">
+    <div class="stat-box"><div class="stat-value" id="statTotal">0</div><div class="stat-label">Jobs fetched</div></div>
+    <div class="stat-box"><div class="stat-value" id="statDiffs">0</div><div class="stat-label">Differ between versions</div></div>
+    <div class="stat-box"><div class="stat-value yellow" id="statOldOnly">0</div><div class="stat-label">Old=Yes, New=Unknown (false +ve risk)</div></div>
+    <div class="stat-box"><div class="stat-value red" id="statNewOnly">0</div><div class="stat-label">New=Yes, Old=Unknown (false -ve risk)</div></div>
+  </div>
+
+  <div class="filter-row">
+    <label>Show:</label>
+    <select id="filterSelect" onchange="renderTable()">
+      <option value="all">All jobs</option>
+      <option value="diffs" selected>Differing only</option>
+      <option value="old-yes">Old=Yes only</option>
+      <option value="new-yes">New=Yes only</option>
+    </select>
+  </div>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Slug</th>
+          <th>Job title</th>
+          <th>Location</th>
+          <th>Original</th>
+          <th>New</th>
+          <th>Matched field</th>
+          <th>Link</th>
+        </tr>
+      </thead>
+      <tbody id="resultsBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// TWO VERSIONS OF ghIsRemote
+// ============================================================
+function ghIsRemoteOriginal(job) {
+  const locName = (job.location?.name || '').toLowerCase();
+  if (locName.includes('remote')) return { result: true, field: 'location.name', value: job.location?.name };
+  const meta = job.metadata || [];
+  for (const m of meta) {
+    const name = (m.name || '').toLowerCase();
+    if (name.includes('location') || name.includes('workplace') || name.includes('work type')) {
+      const val = String(m.value || '').toLowerCase();
+      if (val.includes('remote')) return { result: true, field: m.name, value: m.value };
+      if (val === 'onsite' || val === 'on-site' || val === 'office' || val === 'hybrid')
+        return { result: false, field: m.name, value: m.value };
+    }
+  }
+  return { result: null, field: null, value: null };
+}
+
+function ghIsRemoteNew(job) {
+  const locName = (job.location?.name || '').toLowerCase();
+  if (locName.includes('remote')) return { result: true, field: 'location.name', value: job.location?.name };
+  const meta = job.metadata || [];
+  for (const m of meta) {
+    const name = (m.name || '').toLowerCase();
+    if ((name.includes('location') && !name.includes('posting')) || name.includes('workplace') || name.includes('work type')) {
+      const val = String(m.value || '').toLowerCase();
+      if (val.includes('remote')) return { result: true, field: m.name, value: m.value };
+      if (val === 'onsite' || val === 'on-site' || val === 'office' || val === 'hybrid')
+        return { result: false, field: m.name, value: m.value };
+    }
+  }
+  return { result: null, field: null, value: null };
+}
+
+// ============================================================
+// STATE
+// ============================================================
+let allRows = [];
+
+function labelOf(r) {
+  if (r.result === true) return 'Yes';
+  if (r.result === false) return 'No';
+  return 'Unknown';
+}
+
+function badgeClass(label) {
+  if (label === 'Yes') return 'badge-yes';
+  if (label === 'No') return 'badge-no';
+  return 'badge-unknown';
+}
+
+// ============================================================
+// FETCH
+// ============================================================
+async function fetchGHJobs(slug) {
+  const url = `https://boards-api.greenhouse.io/v1/boards/${slug}/jobs?content=false`;
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  const data = await resp.json();
+  return data.jobs || [];
+}
+
+// ============================================================
+// RUN
+// ============================================================
+async function runExperiment() {
+  const slugs = document.getElementById('slugList').value
+    .split(/[\n,]+/)
+    .map(s => s.trim().toLowerCase())
+    .filter(Boolean);
+
+  if (!slugs.length) { alert('Enter at least one slug.'); return; }
+
+  document.getElementById('runBtn').disabled = true;
+  document.getElementById('progressBar').style.width = '0%';
+  document.getElementById('statusText').textContent = 'Fetching...';
+  document.getElementById('resultsCard').style.display = 'none';
+  allRows = [];
+
+  for (let i = 0; i < slugs.length; i++) {
+    const slug = slugs[i];
+    document.getElementById('statusText').textContent = `Fetching ${slug}... (${i + 1}/${slugs.length})`;
+    document.getElementById('progressBar').style.width = `${Math.round(((i + 1) / slugs.length) * 100)}%`;
+
+    try {
+      const jobs = await fetchGHJobs(slug);
+      for (const job of jobs) {
+        const oldR = ghIsRemoteOriginal(job);
+        const newR = ghIsRemoteNew(job);
+        allRows.push({
+          slug,
+          title: job.title,
+          location: job.location?.name || '',
+          url: job.absolute_url,
+          old: oldR,
+          newR: newR,
+          differs: labelOf(oldR) !== labelOf(newR),
+        });
+      }
+    } catch (e) {
+      allRows.push({ slug, title: `ERROR: ${e.message}`, location: '', url: '', old: { result: null }, newR: { result: null }, differs: false, error: true });
+    }
+  }
+
+  const diffs = allRows.filter(r => r.differs);
+  const oldOnly = allRows.filter(r => labelOf(r.old) === 'Yes' && labelOf(r.newR) !== 'Yes');
+  const newOnly = allRows.filter(r => labelOf(r.newR) === 'Yes' && labelOf(r.old) !== 'Yes');
+
+  document.getElementById('statTotal').textContent = allRows.length;
+  document.getElementById('statDiffs').textContent = diffs.length;
+  document.getElementById('statOldOnly').textContent = oldOnly.length;
+  document.getElementById('statNewOnly').textContent = newOnly.length;
+
+  document.getElementById('resultsCard').style.display = '';
+  document.getElementById('statusText').textContent = `Done. ${allRows.length} jobs across ${slugs.length} board(s). ${diffs.length} differ.`;
+  document.getElementById('runBtn').disabled = false;
+
+  renderTable();
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function renderTable() {
+  const filter = document.getElementById('filterSelect').value;
+  let rows = allRows;
+  if (filter === 'diffs')    rows = allRows.filter(r => r.differs);
+  if (filter === 'old-yes')  rows = allRows.filter(r => labelOf(r.old) === 'Yes');
+  if (filter === 'new-yes')  rows = allRows.filter(r => labelOf(r.newR) === 'Yes');
+
+  const body = document.getElementById('resultsBody');
+
+  if (!rows.length) {
+    body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-dim);padding:1.5rem">No rows match this filter.</td></tr>';
+    return;
+  }
+
+  body.innerHTML = rows.map(r => {
+    const oldLabel = labelOf(r.old);
+    const newLabel = labelOf(r.newR);
+    const oldBadge = r.differs ? 'badge-diff' : badgeClass(oldLabel);
+    const newBadge = r.differs ? 'badge-diff' : badgeClass(newLabel);
+    const rowClass = r.differs ? 'diff-row' : '';
+
+    const matchedField = r.old.field
+      ? `<div>${escHtml(r.old.field)}</div><div class="meta-detail">${escHtml(String(r.old.value || ''))}</div>`
+      : '<span style="color:var(--text-dim)">—</span>';
+
+    return `<tr class="${rowClass}">
+      <td><code>${escHtml(r.slug)}</code></td>
+      <td>${r.url ? `<a href="${escHtml(r.url)}" target="_blank">${escHtml(r.title)}</a>` : escHtml(r.title)}</td>
+      <td>${escHtml(r.location)}</td>
+      <td><span class="badge ${oldBadge}">${oldLabel}</span></td>
+      <td><span class="badge ${newBadge}">${newLabel}</span></td>
+      <td>${matchedField}</td>
+      <td>${r.url ? `<a href="${escHtml(r.url)}" target="_blank">open</a>` : ''}</td>
+    </tr>`;
+  }).join('');
+}
+
+function clearAll() {
+  allRows = [];
+  document.getElementById('resultsCard').style.display = 'none';
+  document.getElementById('progressBar').style.width = '0%';
+  document.getElementById('statusText').textContent = 'Ready.';
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
