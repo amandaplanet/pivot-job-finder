@@ -1242,6 +1242,16 @@
     </div>
 
     <div class="controls">
+      <h2 style="color:var(--accent);font-size:1.2rem;margin-bottom:0.75rem">Your Data</h2>
+      <p style="color:var(--text-dim);font-size:0.95rem;line-height:1.7">
+        Everything you enter — your resume, API keys, search preferences, and scan results — is stored in your browser's local storage. Nothing is sent to any server except the job board APIs and Anthropic (if you use LLM scoring).
+      </p>
+      <p style="color:var(--text-dim);font-size:0.95rem;line-height:1.7;margin-top:0.75rem">
+        Because data lives in your browser, you'll lose it if you clear your browser's site data or cookies, open the app in a different browser or device, or use a private/incognito window. Clicking the <strong style="color:var(--text)">Clear</strong> button in the scanner will also remove your cached scan results (but not your settings or resume).
+      </p>
+    </div>
+
+    <div class="controls">
       <h2 style="color:var(--accent);font-size:1.2rem;margin-bottom:0.75rem">Limitations</h2>
       <p style="color:var(--text-dim);font-size:0.95rem;line-height:1.7">
         Result quality depends on what applicant tracking system each company uses, and whether the type and slug have been added to the spreadsheet.
@@ -1474,12 +1484,6 @@ const WIZARD_STEPS = 7;
 
   updateScannerTabState();
 
-  // Default tab: Evaluate if neither a RapidAPI key nor any ATS companies are available
-  const initRapidKey = document.getElementById('apiKey').value.trim();
-  const initHasAts = companies.some(c => c.atsSlug);
-  if (!initRapidKey && !initHasAts) {
-    switchTab('evaluate');
-  }
 
   // Auto-load cached scan results if they exist
   try {
@@ -3395,19 +3399,10 @@ function switchTab(tabName) {
 }
 
 function updateScannerTabState() {
-  const hasRapidKey = document.getElementById('apiKey').value.trim().length > 0;
-  const hasAtsCompanies = companies.some(c => c.atsSlug);
-  const canScan = hasRapidKey || hasAtsCompanies;
-  const scannerBtn = document.getElementById('tabBtnScanner');
   const gate = document.getElementById('scannerGate');
   const scannerContent = document.getElementById('scannerContent');
-
-  scannerBtn.classList.toggle('tab-disabled', !canScan);
-
-  if (gate && scannerContent) {
-    gate.style.display = canScan ? 'none' : '';
-    scannerContent.style.display = canScan ? '' : 'none';
-  }
+  if (gate) gate.style.display = 'none';
+  if (scannerContent) scannerContent.style.display = '';
 }
 
 // ============================================================
