@@ -2333,6 +2333,10 @@ async function startScan() {
   const toScan = selected;
   const toScanSet = new Set(toScan.map(c => c.toLowerCase()));
 
+  // Snapshot LLM evaluations before dropping stale results, so re-scanned jobs
+  // that come back with the same ID don't get re-evaluated unnecessarily.
+  const cachedLLMEvals = new Map(allResults.filter(r => r.llmEvaluation).map(r => [r.jobId, r.llmEvaluation]));
+
   // Remove stale results from companies we're about to re-scan
   allResults = allResults.filter(r => !toScanSet.has((r.searchCompany || '').toLowerCase()));
 
@@ -2429,9 +2433,10 @@ async function startScan() {
           const evaluation = skipKeywordScoring ? null : evaluateResumeFit(desc, job.job_title);
           const isRemote = job.job_is_remote;
           const contactData = findContact(job.employer_name);
+          const restoredLLM = cachedLLMEvals.get(jid) || null;
 
           allResults.push({
-            score: evaluation ? evaluation.score : null,
+            score: restoredLLM ? restoredLLM.score : (evaluation ? evaluation.score : null),
             keywordScore: evaluation ? evaluation.score : null,
             company: job.employer_name || company,
             searchCompany: company,
@@ -2440,7 +2445,7 @@ async function startScan() {
             remote: isRemote === true ? 'Yes' : isRemote === false ? 'No' : 'Unknown',
             applyLink: job.job_apply_link || '',
             evaluation,
-            llmEvaluation: null,
+            llmEvaluation: restoredLLM,
             contact: contactData,
             description: desc,
             jobId: jid,
@@ -2587,11 +2592,21 @@ const SYNONYMS_MAIN = {
   ],
 };
 
+const EXCLUSIONS_MAIN = {
+  'engineer': [
+    'product manager', 'product marketing', 'account executive', 'account manager',
+    'sales manager', 'marketing manager', 'customer success', 'customer support',
+    'recruiting', 'recruiter',
+  ],
+};
+
 function matchesSynonymsMain(title, area) {
   if (!area || area === '') return true;
   const t = title.toLowerCase();
   const syns = SYNONYMS_MAIN[area];
   if (!syns) return true; // unknown/custom area — don't filter
+  const excl = EXCLUSIONS_MAIN[area] || [];
+  if (excl.some(e => t.includes(e))) return false;
   return syns.some(s => t.includes(s));
 }
 
