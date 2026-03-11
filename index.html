@@ -2660,9 +2660,10 @@ async function fetchJobsGreenhouse(slug, company, functionalArea, location, sign
   const allJobs = listData.jobs || [];
   logScan(`GH ${slug}: ${allJobs.length} total jobs from API`);
   const loc = location ? location.toLowerCase() : '';
+  const remoteFilterGH = document.getElementById('remoteFilter').value;
   const matched = allJobs
     .filter(j => matchesSynonymsMain(j.title, functionalArea))
-    .filter(j => !loc || (j.location?.name || '').toLowerCase().includes(loc));
+    .filter(j => !loc || (remoteFilterGH !== 'no-remote' && ghIsRemote(j)) || (j.location?.name || '').toLowerCase().includes(loc));
   logScan(`GH ${slug}: ${matched.length} match synonyms for "${functionalArea}"${loc ? ` in "${location}"` : ''}`);
 
   // Fetch full content (description) for each matched job individually
@@ -2703,9 +2704,17 @@ async function fetchJobsLever(slug, company, functionalArea, location, signal) {
   if (!resp.ok) throw new Error(`Lever HTTP ${resp.status}`);
   const data = await resp.json();
   const loc = location ? location.toLowerCase() : '';
+  const remoteFilterLever = document.getElementById('remoteFilter').value;
   const jobs = (Array.isArray(data) ? data : [])
     .filter(j => matchesSynonymsMain(j.text, functionalArea))
-    .filter(j => !loc || (j.categories?.location || '').toLowerCase().includes(loc));
+    .filter(j => {
+      if (!loc) return true;
+      if (remoteFilterLever !== 'no-remote') {
+        const isRemote = j.workplaceType === 'remote' || (j.categories?.location || '').toLowerCase().includes('remote');
+        if (isRemote) return true;
+      }
+      return (j.categories?.location || '').toLowerCase().includes(loc);
+    });
   return { company, jobs: jobs.map(j => normalizeLeverJob(j, company)) };
 }
 
@@ -2729,10 +2738,18 @@ async function fetchJobsAshby(slug, company, functionalArea, location, signal) {
   if (!resp.ok) throw new Error(`Ashby HTTP ${resp.status}`);
   const data = await resp.json();
   const loc = location ? location.toLowerCase() : '';
+  const remoteFilterAshby = document.getElementById('remoteFilter').value;
   const jobs = (data.jobs || [])
     .filter(j => j.isListed !== false)
     .filter(j => matchesSynonymsMain(j.title, functionalArea))
-    .filter(j => !loc || (j.location || '').toLowerCase().includes(loc));
+    .filter(j => {
+      if (!loc) return true;
+      if (remoteFilterAshby !== 'no-remote') {
+        const isRemote = j.isRemote === true || j.workplaceType === 'Remote';
+        if (isRemote) return true;
+      }
+      return (j.location || '').toLowerCase().includes(loc);
+    });
   return { company, jobs: jobs.map(j => normalizeAshbyJob(j, company)) };
 }
 
