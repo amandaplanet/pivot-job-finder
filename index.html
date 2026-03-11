@@ -1459,6 +1459,7 @@ function checkAuth() {
 
 let allResults = [];
 let scannedCompanies = new Set(); // lowercase company names that have been scanned
+let sessionSearchCount = 0;
 let titleFilterChips = [];
 let defaultTitleChips = [];
 let wizardTitleChips = [];
@@ -1575,7 +1576,7 @@ function onFunctionalAreaChange(prefix) {
   const customId = prefix ? prefix + 'FunctionalAreaCustom' : 'functionalAreaCustom';
   const isOther = document.getElementById(id).value === 'other';
   document.getElementById(customId).style.display = isOther ? '' : 'none';
-  if (!prefix) gtag('event', 'filter_changed', { filter: 'functional_area', value: document.getElementById(id).value });
+  gtag('event', 'filter_changed', { filter: 'functional_area', value: document.getElementById(id).value, context: prefix || 'setup' });
 }
 
 function getFunctionalArea(prefix) {
@@ -2320,13 +2321,17 @@ async function startScan() {
   if (selected.length === 0) { alert('Please select at least one company.'); return; }
 
   const _atsCount = selected.filter(c => !!companiesMap[c.toLowerCase()]?.atsSlug).length;
+  sessionSearchCount++;
   gtag('event', 'scan_start', {
     company_count: selected.length,
     ats_company_count: _atsCount,
     jsearch_company_count: selected.length - _atsCount,
-    functional_area: document.getElementById('functionalAreaPreset').value || 'custom',
+    functional_area: getFunctionalArea('') || 'none',
     location_set: document.getElementById('locationInput').value.trim().length > 0,
     remote_filter: document.getElementById('remoteFilter').value,
+    resume_filled: document.getElementById('resumeText').value.trim().length > 0,
+    title_filter_count: defaultTitleChips.length,
+    session_search_number: sessionSearchCount,
   });
 
   // Always scan whatever is selected; re-scanning a company replaces its old results
@@ -3994,6 +3999,10 @@ function wizardFinish() {
   gtag('event', 'wizard_complete', {
     has_rapidapi_key: hasRapidKeyAfterWizard,
     has_anthropic_key: hasAnthropicKeyAfterWizard,
+    functional_area: getFunctionalArea('wizard') || 'none',
+    resume_filled: document.getElementById('wizardResume').value.trim().length > 0,
+    location_filled: document.getElementById('wizardLocation')?.value.trim().length > 0,
+    title_filter_count: wizardTitleChips.length,
   });
 
   // Navigate to Scanner — ATS companies don't need a JSearch key to scan
