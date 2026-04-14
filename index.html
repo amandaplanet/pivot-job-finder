@@ -377,6 +377,9 @@
   .contact-banner { margin-bottom: 0.75rem; }
   .contact-banner .contact-info { border-left-width: 4px; }
   .comp-note { padding: 0.4rem 0.6rem; background: var(--surface); border-radius: 4px; font-size: 0.85rem; margin-top: 0.4rem; }
+  .redacted-val { color: var(--text-dim); font-style: italic; font-size: 0.8em; background: rgba(0,0,0,0.06); border-radius: 3px; padding: 0 4px; letter-spacing: 0.02em; }
+  #guestBanner { background: #fff8e1; border: 1px solid #f0c040; border-radius: 8px; padding: 0.6rem 1rem; margin-bottom: 1.25rem; font-size: 0.875rem; color: #7a5800; display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+  #guestBanner a { color: var(--accent); font-weight: 600; text-decoration: underline; cursor: pointer; white-space: nowrap; }
   .keyword-highlight { background: rgba(4,131,113,0.12); border-radius: 2px; padding: 0 2px; }
 
   .table-wrapper {
@@ -756,12 +759,24 @@
       onkeydown="if(event.key==='Enter')checkAuth()">
     <div id="authError" style="color:var(--red);font-size:0.82rem;margin-bottom:0.75rem;display:none">Incorrect passphrase. Try again.</div>
     <button onclick="checkAuth()" style="width:100%;padding:0.65rem;font-size:0.95rem">Enter</button>
+    <div style="display:flex;align-items:center;gap:0.5rem;margin:1rem 0 0.75rem"><div style="flex:1;height:1px;background:var(--border)"></div><span style="font-size:0.78rem;color:var(--text-dim);white-space:nowrap">or</span><div style="flex:1;height:1px;background:var(--border)"></div></div>
+    <button onclick="continueAsGuest()" style="width:100%;padding:0.6rem;font-size:0.9rem;background:var(--surface2);color:var(--text);border:1px solid var(--border)">Continue as Guest</button>
+    <p style="font-size:0.75rem;color:var(--text-dim);margin-top:0.6rem;line-height:1.4;text-align:center">Guest mode shows companies but redacts contact info and notes.</p>
   </div>
 </div>
-<script>if(localStorage.getItem('pjf_auth')==='1')document.getElementById('authGate').style.display='none';</script>
+<script>
+  (function() {
+    const a = localStorage.getItem('pjf_auth');
+    if (a === '1' || a === 'guest') document.getElementById('authGate').style.display = 'none';
+  })();
+</script>
 
 <h1>Pivot Job Finder</h1>
 <p class="subtitle">Find and evaluate job postings at companies where Pivotal alumni can refer you — scored with AI evaluation.</p>
+<div id="guestBanner" style="display:none">
+  <span>&#128274; Guest mode — contact info, notes, and location data are redacted.</span>
+  <a onclick="unlockFromGuest()">Enter passphrase to unlock full access</a>
+</div>
 
 <!-- ============================================================ -->
 <!-- SETUP WIZARD MODAL -->
@@ -1450,11 +1465,29 @@ function checkAuth() {
   if (document.getElementById('authInput').value === 'alwaysbekind') {
     localStorage.setItem('pjf_auth', '1');
     document.getElementById('authGate').style.display = 'none';
+    document.getElementById('guestBanner').style.display = 'none';
   } else {
     document.getElementById('authError').style.display = '';
     document.getElementById('authInput').value = '';
     document.getElementById('authInput').focus();
   }
+}
+
+function continueAsGuest() {
+  localStorage.setItem('pjf_auth', 'guest');
+  document.getElementById('authGate').style.display = 'none';
+  document.getElementById('guestBanner').style.display = 'flex';
+}
+
+function isGuest() {
+  return localStorage.getItem('pjf_auth') === 'guest';
+}
+
+function unlockFromGuest() {
+  localStorage.removeItem('pjf_auth');
+  document.getElementById('guestBanner').style.display = 'none';
+  document.getElementById('authGate').style.display = 'flex';
+  document.getElementById('authInput').focus();
 }
 
 let allResults = [];
@@ -1473,6 +1506,9 @@ const WIZARD_STEPS = 7;
 // INIT
 // ============================================================
 (function init() {
+  // Show guest banner if returning in guest mode
+  if (isGuest()) document.getElementById('guestBanner').style.display = 'flex';
+
   loadSettings();
   loadCompanies();
 
@@ -1895,11 +1931,13 @@ function showCompanyPopover(c, anchor) {
     if (unavailable) {
       html += `<div style="font-size:0.78rem;color:var(--yellow);margin-bottom:0.4rem;padding:0.3rem 0.4rem;background:rgba(192,136,0,0.08);border-radius:4px">Requires a JSearch API key — add one in Setup to enable scanning.</div>`;
     }
-    if (c.contactName) html += `<div class="pop-row"><span class="pop-lbl">Contact</span><span>${escapeHtml(c.contactName)}</span></div>`;
-    if (c.contactInfo) html += `<div class="pop-row"><span class="pop-lbl">Info</span><span>${escapeHtml(c.contactInfo)}</span></div>`;
-    if (c.location)    html += `<div class="pop-row"><span class="pop-lbl">Location</span><span>${escapeHtml(c.location)}</span></div>`;
-    if (c.hiring)      html += `<div class="pop-row"><span class="pop-lbl">Hiring</span><span>${escapeHtml(c.hiring)}</span></div>`;
-    if (c.notes)       html += `<div class="pop-row"><span class="pop-lbl">Notes</span><span>${escapeHtml(c.notes)}</span></div>`;
+    const _guest = isGuest();
+    const _r = (v) => _guest ? '<span class="redacted-val">[REDACTED]</span>' : escapeHtml(v);
+    if (c.contactName) html += `<div class="pop-row"><span class="pop-lbl">Contact</span><span>${_r(c.contactName)}</span></div>`;
+    if (c.contactInfo) html += `<div class="pop-row"><span class="pop-lbl">Info</span><span>${_r(c.contactInfo)}</span></div>`;
+    if (c.location)    html += `<div class="pop-row"><span class="pop-lbl">Location</span><span>${_r(c.location)}</span></div>`;
+    if (c.hiring)      html += `<div class="pop-row"><span class="pop-lbl">Hiring</span><span>${_r(c.hiring)}</span></div>`;
+    if (c.notes)       html += `<div class="pop-row"><span class="pop-lbl">Notes</span><span>${_r(c.notes)}</span></div>`;
     if (!c.contactName && !c.contactInfo && !c.location && !c.hiring && !c.notes)
       html += `<div style="color:var(--text-dim);font-size:0.8rem">No additional info</div>`;
     pop.innerHTML = html;
@@ -3089,7 +3127,7 @@ function renderResults() {
     tr.innerHTML = `
       <td class="score-cell" style="color:${scoreColor}">${scoreDisplay}<div style="font-size:0.65rem;font-weight:400;color:var(--text-dim)">${scoreIndicator} ${fitLabel}</div></td>
       <td class="company-cell">${escapeHtml(r.company)}</td>
-      <td class="contact-cell" style="color:${r.contact && r.contact.contactName ? 'var(--green)' : 'var(--text-dim)'}; font-size:0.85rem">${r.contact && r.contact.contactName ? escapeHtml(r.contact.contactName) : '—'}</td>
+      <td class="contact-cell" style="color:${r.contact && r.contact.contactName ? (isGuest() ? 'var(--text-dim)' : 'var(--green)') : 'var(--text-dim)'}; font-size:0.85rem">${r.contact && r.contact.contactName ? (isGuest() ? '<span class="redacted-val">[REDACTED]</span>' : escapeHtml(r.contact.contactName)) : '—'}</td>
       <td class="title-cell">${r.applyLink ? `<a href="${escapeHtml(r.applyLink)}" target="_blank" onclick="trackApplyClick(${_idx})">${escapeHtml(r.title)}</a>` : escapeHtml(r.title)}</td>
       <td class="location-cell">${escapeHtml(r.location)}</td>
       <td><span class="remote-badge ${remoteBadge}">${r.remote}</span></td>
@@ -3193,13 +3231,15 @@ function toggleDetail(idx, tr) {
   // Contact HTML
   let contactHtml = '';
   if (r.contact) {
+    const _guestDetail = isGuest();
+    const _rd = (v) => _guestDetail ? '<span class="redacted-val">[REDACTED]</span>' : escapeHtml(v);
     contactHtml = `<div class="contact-info">
       <div class="contact-name">${escapeHtml(r.contact.company)}</div>
-      ${r.contact.contactName ? `<div class="contact-detail"><strong>Contact:</strong> ${escapeHtml(r.contact.contactName)}</div>` : ''}
-      ${r.contact.contactInfo ? `<div class="contact-detail"><strong>Info:</strong> ${escapeHtml(r.contact.contactInfo)}</div>` : ''}
-      ${r.contact.location ? `<div class="contact-detail"><strong>Location:</strong> ${escapeHtml(r.contact.location)}</div>` : ''}
-      ${r.contact.hiring ? `<div class="contact-detail"><strong>Hiring:</strong> ${escapeHtml(r.contact.hiring)}</div>` : ''}
-      ${r.contact.notes ? `<div class="contact-detail"><strong>Notes:</strong> ${escapeHtml(r.contact.notes)}</div>` : ''}
+      ${r.contact.contactName ? `<div class="contact-detail"><strong>Contact:</strong> ${_rd(r.contact.contactName)}</div>` : ''}
+      ${r.contact.contactInfo ? `<div class="contact-detail"><strong>Info:</strong> ${_rd(r.contact.contactInfo)}</div>` : ''}
+      ${r.contact.location ? `<div class="contact-detail"><strong>Location:</strong> ${_rd(r.contact.location)}</div>` : ''}
+      ${r.contact.hiring ? `<div class="contact-detail"><strong>Hiring:</strong> ${_rd(r.contact.hiring)}</div>` : ''}
+      ${r.contact.notes ? `<div class="contact-detail"><strong>Notes:</strong> ${_rd(r.contact.notes)}</div>` : ''}
     </div>`;
   } else {
     contactHtml = '<div class="no-contact">No contact info found for this company.</div>';
